@@ -6,8 +6,8 @@ const litecoin = '/blockscrape/litecoin.sh'
 const litecoinCommands = require('./litecoin_api')
 
 const client = (blockchain, args) => {
-  if (!blockchain || !args) {
-    console.warn('You must specify a blockchain and provide valid arguments!')
+  if (!blockchain || !Array.isArray(args) || !args.length) {
+    console.warn('Please specify a blockchain and provide an array of valid arguments!')
     process.exit()
   }
 
