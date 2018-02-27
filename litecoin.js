@@ -2,5 +2,19 @@ const { client } = require('./main.js')
 const api = require('./litecoin_api')
 const litecoin = 'litecoin-cli'
 
-client(litecoin, [api.getBlock, '5007153e4c02602dd2ee1df62efc727f5d5c261a942c2f254fa89fb6e6a8f0cf'])
-client(litecoin, [api.getBlockHash, 0])
+const getBlockHashByHeight = async (height) => {
+  return await client(litecoin, [api.getBlockHash, height])
+}
+
+const getBlock = async (blockhash) => {
+  return await client(litecoin, [api.getBlock, blockhash])
+}
+
+const scraper = async () => {
+  for (let i = 0; i < 10; i++) {
+    let blockhash = getBlockHashByHeight(i)
+    let block = getBlock(blockhash)
+  }
+}
+
+ scraper()
