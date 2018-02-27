@@ -1,22 +1,50 @@
 #!/usr/bin/env node
 
-const { exec } = require('child_process')
+const { spawn } = require('child_process')
 
 const client = (command, args) => {
   if (!command || !Array.isArray(args) || !args.length) {
     console.warn('Please specify a command and provide an array arguments!')
-    process.exit()
+    process.exit(1)
   }
 
-  exec(`${command} ${args.join(' ')}`, (err, stdout, stderr) => {
-    if (err || stderr) {
-      console.warn('Error!')
-      console.log(`stderr: ${stderr}`)
-      console.log(`err: ${err}`)
-    } else {
-      console.log(`stdout = ${stdout}`)
-      return stdout
-    }
+  return new Promise( (resolve, reject) => {
+    let worker = spawn(`${command} ${args.join(' ')}`, {
+      shell: true
+    })
+
+    worker.on('error', (err) => {
+      console.log(`errored with: ${err}`)
+    })
+
+    worker.on('exit', (code, signal) => {
+      if (code !== 0 || signal !== null) {
+        console.log(`exited with code ${code} and signal: ${signal}`)
+      }
+    })
+
+    worker.on('close', (reason) => {
+      if (reason !== 0) {
+        console.log(`closed for reason: ${reason}`)
+      }
+    })
+
+    worker.on('message', (message) => {
+      console.log(`message recieved: ${message}`)
+    })
+
+    worker.stdout.on('data', (data) => {
+      resolve(data.toString())
+    })
+
+    worker.stderr.on('data', (data) => {
+      reject(data.toString())
+    })
+  })
+
+  process.on('unhandledRejection', (err) => {
+    console.error(`Unhandled rejection error: ${err}`)
+    process.exit(1)
   })
 }
 
