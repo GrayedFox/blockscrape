@@ -1,25 +1,52 @@
 #!/usr/bin/env node
 
-const { exec } = require('child_process')
+const { spawn } = require('child_process')
 
-const litecoin = '/blockscrape/litecoin.sh'
-const litecoinCommands = require('./litecoin_api')
-
-const client = (blockchain, args) => {
-  if (!blockchain || !Array.isArray(args) || !args.length) {
-    console.warn('Please specify a blockchain and provide an array of valid arguments!')
-    process.exit()
+const client = (command, args) => {
+  if (!command || !Array.isArray(args) || !args.length) {
+    console.warn('Please specify a command and provide an array arguments!')
+    process.exit(1)
   }
 
-  exec(`${process.cwd()}${litecoin} ${args.join(' ')}`, (err, stdout, stderr) => {
+  return new Promise( (resolve, reject) => {
+    let worker = spawn(`${command} ${args.join(' ')}`, {
+      shell: true
+    })
 
-    console.log(`stdout: ${stdout}`)
-    console.log(`stderr: ${stderr}`)
-    console.log(`err: ${err}`)
+    worker.on('error', (err) => {
+      console.log(`errored with: ${err}`)
+    })
+
+    worker.on('exit', (code, signal) => {
+      if (code !== 0 || signal !== null) {
+        console.log(`exited with code ${code} and signal: ${signal}`)
+      }
+    })
+
+    worker.on('close', (reason) => {
+      if (reason !== 0) {
+        console.log(`closed for reason: ${reason}`)
+      }
+    })
+
+    worker.on('message', (message) => {
+      console.log(`message recieved: ${message}`)
+    })
+
+    worker.stdout.on('data', (data) => {
+      resolve(data.toString())
+    })
+
+    worker.stderr.on('data', (data) => {
+      reject(data.toString())
+    })
+  })
+
+  process.on('unhandledRejection', (err) => {
+    console.error(`Unhandled rejection error: ${err}`)
+    process.exit(1)
   })
 }
-
-client(litecoin, [litecoinCommands.help, litecoinCommands.getInfo])
 
 module.exports = {
   client
