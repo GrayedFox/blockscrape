@@ -8,6 +8,11 @@ const client = (command, args) => {
     process.exit(1)
   }
 
+  process.on('unhandledRejection', (err) => {
+    console.error(`Unhandled rejection error: ${err}`)
+    process.exit(1)
+  })
+
   return new Promise( (resolve, reject) => {
     let worker = spawn(`${command} ${args.join(' ')}`, {
       shell: true
@@ -40,11 +45,6 @@ const client = (command, args) => {
     worker.stderr.on('data', (data) => {
       reject(data.toString())
     })
-  })
-
-  process.on('unhandledRejection', (err) => {
-    console.error(`Unhandled rejection error: ${err}`)
-    process.exit(1)
   })
 }
 
