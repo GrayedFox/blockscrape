@@ -1,0 +1,32 @@
+{
+  "name": "blockscrape",
+  "version": "0.0.1",
+  "description": "Scrape blockchains for desired attributes and export to a CSV file",
+  "main": "main.js",
+  "dependencies": {
+    "eslint": "^4.18.1"
+  },
+  "devDependencies": {},
+  "optionalDependencies": {
+    "ajv": "^6.0.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "./node_modules/.bin/eslint **/*.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GrayedFox/blockscrape.git"
+  },
+  "keywords": [
+    "blockchain",
+    "crypto",
+    "scraper"
+  ],
+  "author": "Che Fisher",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/GrayedFox/blockscrape/issues"
+  },
+  "homepage": "https://github.com/GrayedFox/blockscrape#readme"
+}
