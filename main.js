@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
 const { spawn } = require('child_process')
+const blockchainCli = process.env.BLOCKCHAINCLI || 'litecoin-cli'
 
-const client = (command, args) => {
-  if (!command || !Array.isArray(args) || !args.length) {
-    console.warn('Please specify a command and provide an array arguments!')
+const client = (args) => {
+  if (!Array.isArray(args) || !args.length) {
+    console.warn('Please provide an array of valid arguments!')
     process.exit(1)
   }
 
@@ -13,24 +14,26 @@ const client = (command, args) => {
     process.exit(1)
   })
 
+  process.setMaxListeners(20)
+
   return new Promise( (resolve, reject) => {
-    let worker = spawn(`${command} ${args.join(' ')}`, {
+    let worker = spawn(`${blockchainCli} ${args.join(' ')}`, {
       shell: true
     })
 
     worker.on('error', (err) => {
-      console.log(`errored with: ${err}`)
+      console.error(`errored with: ${err}`)
     })
 
     worker.on('exit', (code, signal) => {
       if (code !== 0 || signal !== null) {
-        console.log(`exited with code ${code} and signal: ${signal}`)
+        console.warn(`exited with code ${code} and signal: ${signal}`)
       }
     })
 
     worker.on('close', (reason) => {
       if (reason !== 0) {
-        console.log(`closed for reason: ${reason}`)
+        console.warn(`closed for reason: ${reason}`)
       }
     })
 
@@ -49,5 +52,6 @@ const client = (command, args) => {
 }
 
 module.exports = {
-  client
+  client,
+  blockchainCli
 }
