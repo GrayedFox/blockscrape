@@ -9,14 +9,9 @@ const client = (args) => {
     process.exit(1)
   }
 
-  process.on('unhandledRejection', (err) => {
-    console.error(`Unhandled rejection error: ${err}`)
-    process.exit(1)
-  })
-
-  process.setMaxListeners(20)
-
   return new Promise( (resolve, reject) => {
+    let result = ''
+    let resultError = ''
     let worker = spawn(`${blockchainCli} ${args.join(' ')}`, {
       shell: true
     })
@@ -34,6 +29,9 @@ const client = (args) => {
     worker.on('close', (reason) => {
       if (reason !== 0) {
         console.warn(`closed for reason: ${reason}`)
+        reject(resultError)
+      } else {
+        resolve(result)
       }
     })
 
@@ -42,11 +40,11 @@ const client = (args) => {
     })
 
     worker.stdout.on('data', (data) => {
-      resolve(data.toString())
+      result += data.toString()
     })
 
     worker.stderr.on('data', (data) => {
-      reject(data.toString())
+      resultError += data.toString()
     })
   })
 }

@@ -12,7 +12,7 @@ const scraper = async (blockheight) => {
 
     for (let i = 0; i < transactions.length; i++) {
       let rawTx = await api.getRawTransaction(transactions[i])
-      console.log(await (api.decodeRawTransaction(rawTx)))
+      console.log(rawTx)
     }
 
   } catch (err) {

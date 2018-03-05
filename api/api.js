@@ -19,8 +19,8 @@ const getBlockHashByHeight = (height) => {
   return client([blockchain.getBlockHash, height])
 }
 
-const getRawTransaction = (txHash) => {
-  return client([blockchain.getRawTransaction, txHash])
+const getRawTransaction = (txHash, verbose = true) => {
+  return client([blockchain.getRawTransaction, txHash, verbose])
 }
 
 module.exports = {
