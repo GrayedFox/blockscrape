@@ -3,7 +3,7 @@ const litecoin = require('./litecoin_api')
 
 let blockchain = undefined
 
-if (blockchainCli === 'litecoin-cli' || blockchain === 'bitcoin-cli') {
+if (blockchainCli === 'litecoin-cli' || blockchainCli === 'bitcoin-cli') {
   blockchain = litecoin
 }
 
@@ -19,8 +19,8 @@ const getBlockHashByHeight = (height) => {
   return client([blockchain.getBlockHash, height])
 }
 
-const getRawTransaction = (txHash) => {
-  return client([blockchain.getRawTransaction, txHash])
+const getRawTransaction = (txHash, verbose = true) => {
+  return client([blockchain.getRawTransaction, txHash, verbose])
 }
 
 module.exports = {
