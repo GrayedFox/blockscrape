@@ -3,7 +3,7 @@ const litecoin = require('./litecoin_api')
 
 let blockchain = undefined
 
-if (blockchainCli === 'litecoin-cli' || blockchain === 'bitcoin-cli') {
+if (blockchainCli === 'litecoin-cli' || blockchainCli === 'bitcoin-cli') {
   blockchain = litecoin
 }
 
