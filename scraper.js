@@ -1,40 +1,53 @@
 
 const api = require('./api/api.js')
 
-const getTransactionValue = async (txHash, vOutIndex) => {
+// loop through the voutArray of a tx, greedily returning the value of the matching tx (based on the voutIndex)
+const getMatchingTransactionValue = async (txHash, voutIndex) => {
   let tx = await api.getRawTransaction(txHash)
-  let valueOuts = JSON.parse(tx).vout
+  let voutArray = JSON.parse(tx).vout
 
-  for (let i = 0; i < valueOuts.length; i++) {
-    if (valueOuts[i].n === vOutIndex) {
-      return valueOuts[i].value
+  for (let i = 0; i < voutArray.length; i++) {
+    if (voutArray[i].n === voutIndex) {
+      return voutArray[i].value
     }
   }
 }
 
-const calculateFees = async (txVinArray) => {
-  txVinArray = txVinArray || mock
-  let fee = 0
-
-  for (let i = 0; i < txVinArray.length; i++) {
-    let value = getTransactionValue(txVinArray[i].txid, txVinArray[i].vout)
-  }
+const sumOutputs = (voutArray) => {
+  return voutArray.reduce( (accumulator, currentValue) => accumulator + currentValue.value, 0)
 }
 
-const scraper = async (blockheight) => {
-  blockheight = blockheight || 1234568
+const calculateFee = async (tx) => {
+  tx = JSON.parse(tx)
+  let outputTotal = sumOutputs(tx.vout)
+  let inputTotal = 0
+
+  for (let i = 0; i < tx.vin.length; i++) {
+    inputTotal += await getMatchingTransactionValue(tx.vin[i].txid, tx.vin[i].vout)
+  }
+
+  return inputTotal - outputTotal
+}
+
+const scraper = async (blockHeight) => {
+  blockHeight = blockHeight || 1234567
 
   try {
-    let blockhash = await api.getBlockHashByHeight(blockheight)
-    let block = await api.getBlock(blockhash)
-    let blockObj = JSON.parse(block)
-    let transactions = blockObj.tx
+    let blockHash = await api.getBlockHashByHeight(blockHeight)
+    let block = await api.getBlock(blockHash)
+    let transactions = JSON.parse(block).tx
 
-    for (let i = 0; i < transactions.length; i++) {
-      let rawTx = await api.getRawTransaction(transactions[i])
-      console.log(rawTx)
+    // skip the generation transaction (coinbase) when scraping
+    for (let i = 1; i < transactions.length; i++) {
+      let tx = await api.getRawTransaction(transactions[i])
+      let fee = await calculateFee(tx)
+
+      console.log(tx)
+      console.log(fee)
+      console.log('')
     }
 
+    console.log(`Transactions in block: ${transactions.length}`)
     console.log('NEXT BLOCK')
 
   } catch (err) {
@@ -42,4 +55,14 @@ const scraper = async (blockheight) => {
   }
 }
 
+const testTransaction = async (txHash) => {
+  const tx = await api.getRawTransaction(txHash)
+  const fee = await calculateFee(tx)
+
+  console.log(tx)
+  console.log(txHash)
+  console.log(fee)
+}
+
+testTransaction('3d7bcb3f095d33723bb6566f9fcaa5cc01ba86f54cf88bf3ab86a31a2ced5539')
 scraper()
