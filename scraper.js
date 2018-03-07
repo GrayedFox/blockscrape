@@ -1,7 +1,7 @@
 
 const api = require('./api/api.js')
 
-// loop through the voutArray of a tx, greedily returning the value of the matching tx (based on the voutIndex)
+// loop through the outputs of a tx, greedily returning the value of an output tx where n matches vOutIdx
 const getMatchingTransactionValue = async (txHash, voutIndex) => {
   let tx = await api.getRawTransaction(txHash)
   let voutArray = JSON.parse(tx).vout

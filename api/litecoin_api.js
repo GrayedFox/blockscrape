@@ -96,7 +96,7 @@ module.exports = {
   signMessageWithPrivKey: 'signmessagewithprivkey',
   signRawTransaction: 'signrawtransaction',
   stop: 'stop',
-  submitLock: 'submitblock',
+  submitBlock: 'submitblock',
   validateAddress: 'validateaddress',
   verifyChain: 'verifychain',
   verifyMessage: 'verifymessage',
