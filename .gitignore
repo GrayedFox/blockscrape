@@ -59,3 +59,6 @@ typings/
 
 # tern project config
 .tern-project
+
+# exported csv files
+*.csv
