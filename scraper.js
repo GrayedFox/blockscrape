@@ -1,7 +1,10 @@
 
 const api = require('./api/api.js')
+const fs = require('fs')
 
-// loop through the voutArray of a tx, greedily returning the value of the matching tx (based on the voutIndex)
+let stream = fs.createWriteStream('./exportedData.csv')
+
+// loop through the outputs of a tx, greedily returning the value of an output tx where n matches vOutIdx
 const getMatchingTransactionValue = async (txHash, voutIndex) => {
   let tx = await api.getRawTransaction(txHash)
   let voutArray = JSON.parse(tx).vout
@@ -17,9 +20,7 @@ const sumOutputs = (voutArray) => {
   return voutArray.reduce( (accumulator, currentValue) => accumulator + currentValue.value, 0)
 }
 
-const calculateFee = async (tx) => {
-  tx = JSON.parse(tx)
-  let outputTotal = sumOutputs(tx.vout)
+const calculateFee = async (tx, outputTotal) => {
   let inputTotal = 0
 
   for (let i = 0; i < tx.vin.length; i++) {
@@ -27,6 +28,15 @@ const calculateFee = async (tx) => {
   }
 
   return inputTotal - outputTotal
+}
+
+const writeToCsvFile = (data, newline) => {
+  newline = newline || false
+  if (newline !== true) {
+    stream.write(`${data},`)
+  } else {
+    stream.write(`${data}\n`)
+  }
 }
 
 const scraper = async (blockHeight) => {
@@ -40,15 +50,20 @@ const scraper = async (blockHeight) => {
     // skip the generation transaction (coinbase) when scraping
     for (let i = 1; i < transactions.length; i++) {
       let tx = await api.getRawTransaction(transactions[i])
-      let fee = await calculateFee(tx)
+      tx = JSON.parse(tx)
 
-      console.log(tx)
-      console.log(fee)
-      console.log('')
+      let txAmount = sumOutputs(tx.vout)
+      let fee = await calculateFee(tx, txAmount)
+
+      writeToCsvFile(txAmount)
+      writeToCsvFile(fee)
+      writeToCsvFile(tx.time)
+      writeToCsvFile(tx.txid)
+      writeToCsvFile(blockHeight, true)
     }
 
     console.log(`Transactions in block: ${transactions.length}`)
-    console.log('NEXT BLOCK')
+    console.log(`'Block ${blockHeight} done!`)
 
   } catch (err) {
     console.error(err)
