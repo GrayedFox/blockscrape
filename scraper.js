@@ -63,7 +63,7 @@ const scraper = async (blockHeight) => {
     }
 
     console.log(`Transactions in block: ${transactions.length}`)
-    console.log('Done!')
+    console.log(`'Block ${blockHeight} done!`)
 
   } catch (err) {
     console.error(err)
