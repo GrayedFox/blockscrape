@@ -84,6 +84,8 @@ const runScraper = () => {
       cluster.workers[id].on('message', messageHandler)
     }
 
+    // add listeners which, if blockHeight is less than blockEnd, tell the worker to scrape the next block
+
     cluster.on('exit', (worker, code, signal) => {
       console.log(`Worker ${worker.process.pid} died with code ${code} and signal ${signal}`)
     })
