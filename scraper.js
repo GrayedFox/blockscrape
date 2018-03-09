@@ -1,4 +1,3 @@
-
 const api = require('./api/api.js')
 
 // loop through the outputs of a tx, greedily returning the value of an output tx where n matches vOutIdx
