@@ -64,8 +64,8 @@ const scraper = async (blockHeight, stream) => {
       writeToCsvFile(stream, [txAmount, fee, tx.time, tx.txid, blockHeight])
     }
 
-    console.log(`Real transactions in block: ${transactions.length - 1}`)
     console.log(`Block ${blockHeight} done!`)
+    console.log(`Real transactions in block: ${transactions.length - 1}`)
 
   } catch (err) {
     console.error(err)
