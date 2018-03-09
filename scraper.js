@@ -1,6 +1,5 @@
 
 const api = require('./api/api.js')
-const fs = require('fs')
 
 // loop through the outputs of a tx, greedily returning the value of an output tx where n matches vOutIdx
 const getMatchingTransactionValue = async (txHash, voutIndex) => {
@@ -50,9 +49,6 @@ const testTransaction = async (txHash) => {
 }
 
 const scraper = async (blockHeight, stream) => {
-  blockHeight = blockHeight || 1234567
-  stream = stream || fs.createWriteStream('./exportedData.csv', { flags: 'a'})
-
   try {
     let blockHash = await api.getBlockHashByHeight(blockHeight)
     let block = await api.getBlock(blockHash)
@@ -76,8 +72,6 @@ const scraper = async (blockHeight, stream) => {
     console.error(err)
   }
 }
-
-scraper()
 
 module.exports = {
   testTransaction,

@@ -1,20 +1,21 @@
 #!/usr/bin/env node
 
 const fs = require('fs')
+const os = require('os')
 const cluster = require('cluster')
 const { spawn } = require('child_process')
-const numCPUs = require('os').cpus().length
 const { scraper } = require('./scraper.js')
 
 const blockchainCli = process.env.BLOCKSCRAPECLI || 'litecoin-cli'
-const blockEnd = process.env.BLOCKSCRAPEEND || 100
-let blockHeight = process.env.BLOCKSCRAPEBEGIN || 0
+const blockEnd = process.env.BLOCKSCRAPEEND || 1234100
+const blockBegin = process.env.BLOCKSCRAPEBEGIN || 1234000
+const cores = os.cpus()
 
-const messageHandler = (msg) => {
-  if (msg.cmd && msg.cmd === 'blockDone') {
-    blockHeight += 1
-    console.log('incremented block height')
-  }
+let blockHeight = blockBegin
+let csvWriteStream = undefined
+
+const openCsvWriteStream = () => {
+  csvWriteStream = fs.createWriteStream('./exportedData.csv', { flags: 'a'})
 }
 
 const client = (args) => {
@@ -63,20 +64,39 @@ const client = (args) => {
   })
 }
 
-const runScraper = () => {
+const messageHandler = (msg) => {
+  if (!msg || msg === '') {
+    console.error('Error! Message must be defined and cannot be blank!')
+    return
+  }
+
+  if (msg === 'blockDone') {
+    if (blockHeight <= blockEnd) {
+      scraper(blockHeight, csvWriteStream)
+      blockHeight += 1
+    }
+  }
+
+  if (msg === 'beginScraping') {
+    scraper(blockHeight, csvWriteStream)
+    blockHeight += 1
+  }
+
+  if (msg === 'shutdown') {
+    process.disconnect()
+  }
+}
+
+const main = () => {
   if (blockEnd === undefined || typeof(blockEnd) !== 'number') {
     console.error('Error! BLOCKSCRAPEEND must be defined in your local environment!')
     process.exit(1)
   }
 
-  let stream = fs.createWriteStream('./exportedData.csv', { flags: 'a'})
-  // will need to pass this to every instance of scraper that is being run so they append to the same
-  // file
-
   if (cluster.isMaster) {
     console.log(`Master process ${process.pid} is running`)
 
-    for (let i = 0; i < numCPUs; i++) {
+    for (let i = 0; i < cores.length; i++) {
       cluster.fork()
     }
 
@@ -91,18 +111,14 @@ const runScraper = () => {
     })
   } else {
     console.log(`Worker ${process.pid} started...`)
-    if ( blockHeight < blockEnd ) {
-      // spawn scraper instance with current blockheight
-      // if blockheight hasn't yet incremented, spawn first worker at blockHeight
-      // and next workers at blockHeight + 1/2/3...N
-      // finally, process.send({ cmd: 'blockDone'}) to increment blockHeight and start scraping on
-      // next available worker
-    }
+    process.send('beginScraping')
   }
 }
 
+openCsvWriteStream()
+main()
+
 module.exports = {
   client,
-  blockchainCli,
-  blockHeight
+  blockchainCli
 }
