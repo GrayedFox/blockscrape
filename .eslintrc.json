@@ -12,7 +12,8 @@
     "no-console": 0,
     "indent": [
       "error",
-      2
+      2,
+      { SwitchCase: true }
     ],
     "linebreak-style": [
       "error",
