@@ -29,6 +29,7 @@ const promiseScrape = () => {
 
 const worker = async (process) => {
   let message = await promiseScrape()
+  console.log(`Message from scraper: ${message}`)
   process.send(message)
 }
 
@@ -73,7 +74,7 @@ const main = () => {
     cluster.on('message', (worker, message) => {
       console.log(`Worker ${worker.process.pid} sent message: ${message}`)
       if (blockHeight <= blockEnd) {
-        worker.send('jerryCan') // <-- doesn't work?
+        worker.send('nextBlock') // <-- doesn't work?
       } else {
         worker.send('shutdown')
       }
