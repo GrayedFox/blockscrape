@@ -41,15 +41,19 @@ const main = () => {
     }
 
     if (msg === 'beginScraping' || msg === 'blockDone') {
-      let result = await scrapeNextBlock()
-      console.log(`Message from scraper: ${result}`)
-      process.send(result) // < -- should send 'blockDone, which in turn calls this message handler recursively'
+      if (blockHeight <= blockEnd) {
+        let result = await scrapeNextBlock()
+        console.log(`Message from scraper: ${result}`)
+        process.send(result) // < -- should send 'blockDone, which in turn calls this message handler recursively'
+      } else {
+        console.log('No more block!')
+        process.kill()
+      }
     }
   }
 
   if (cluster.isMaster) {
     console.log(`Master process ${process.pid} is running`)
-
     for (let i = 0; i < cores.length; i++) {
       cluster.fork()
     }
