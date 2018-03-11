@@ -1,4 +1,4 @@
-const { client, blockchainCli } = require('../main.js')
+const { client, blockchainCli } = require('../client.js')
 const litecoin = require('./litecoin_api')
 
 let blockchain = undefined
@@ -19,6 +19,10 @@ const getBlockHashByHeight = (height) => {
   return client([blockchain.getBlockHash, height])
 }
 
+const getInfo = () => {
+  return client([blockchain.getInfo])
+}
+
 const getRawTransaction = (txHash, verbose = true) => {
   return client([blockchain.getRawTransaction, txHash, verbose])
 }
@@ -27,5 +31,6 @@ module.exports = {
   decodeRawTransaction,
   getBlock,
   getBlockHashByHeight,
+  getInfo,
   getRawTransaction
 }

@@ -1,8 +1,4 @@
-
 const api = require('./api/api.js')
-const fs = require('fs')
-
-let stream = fs.createWriteStream('./exportedData.csv')
 
 // loop through the outputs of a tx, greedily returning the value of an output tx where n matches vOutIdx
 const getMatchingTransactionValue = async (txHash, voutIndex) => {
@@ -30,18 +26,28 @@ const calculateFee = async (tx, outputTotal) => {
   return inputTotal - outputTotal
 }
 
-const writeToCsvFile = (data, newline) => {
-  newline = newline || false
-  if (newline !== true) {
-    stream.write(`${data},`)
-  } else {
-    stream.write(`${data}\n`)
+// will need to figure out how to write to the CSV file in order of blocks being scraped
+// OR will need to sort data in csv file after, based on blockHeight OR epochtime etc
+const writeToCsvFile = (stream, data) => {
+  for (let i = 0; i < data.length; i++) {
+    if (i < data.length - 1) {
+      stream.write(`${data[i]},`)
+    } else {
+      stream.write(`${data[i]}\n`)
+    }
   }
 }
 
-const scraper = async (blockHeight) => {
-  blockHeight = blockHeight || 1234567
+const testTransaction = async (txHash) => {
+  const tx = await api.getRawTransaction(txHash)
+  const fee = await calculateFee(tx)
 
+  console.log(tx)
+  console.log(txHash)
+  console.log(fee)
+}
+
+const scraper = async (blockHeight, stream) => {
   try {
     let blockHash = await api.getBlockHashByHeight(blockHeight)
     let block = await api.getBlock(blockHash)
@@ -55,29 +61,19 @@ const scraper = async (blockHeight) => {
       let txAmount = sumOutputs(tx.vout)
       let fee = await calculateFee(tx, txAmount)
 
-      writeToCsvFile(txAmount)
-      writeToCsvFile(fee)
-      writeToCsvFile(tx.time)
-      writeToCsvFile(tx.txid)
-      writeToCsvFile(blockHeight, true)
+      writeToCsvFile(stream, [txAmount, fee, tx.time, tx.txid, blockHeight])
     }
 
-    console.log(`Transactions in block: ${transactions.length}`)
-    console.log(`'Block ${blockHeight} done!`)
+    console.log(`Block ${blockHeight} done!`)
+
+    return('blockDone')
 
   } catch (err) {
     console.error(err)
   }
 }
 
-const testTransaction = async (txHash) => {
-  const tx = await api.getRawTransaction(txHash)
-  const fee = await calculateFee(tx)
-
-  console.log(tx)
-  console.log(txHash)
-  console.log(fee)
+module.exports = {
+  testTransaction,
+  scraper
 }
-
-testTransaction('3d7bcb3f095d33723bb6566f9fcaa5cc01ba86f54cf88bf3ab86a31a2ced5539')
-scraper()

@@ -1,55 +1,85 @@
 #!/usr/bin/env node
 
-const { spawn } = require('child_process')
-const blockchainCli = process.env.BLOCKCHAINCLI || 'litecoin-cli'
+const fs = require('fs')
+const os = require('os')
+const cluster = require('cluster')
+const { scraper } = require('./scraper.js')
 
-const client = (args) => {
-  if (!Array.isArray(args) || !args.length) {
-    console.warn('Please provide an array of valid arguments!')
-    process.exit(1)
-  }
+const blockBegin = process.env.BLOCKSCRAPEBEGIN || 1234000
+const blockEnd = process.env.BLOCKSCRAPEEND || 1235000
+const cores = os.cpus()
 
+let blockHeight = blockBegin
+let firstBlock = true
+let csvWriteStream = undefined
+
+const openCsvWriteStream = () => {
+  csvWriteStream = fs.createWriteStream('./exportedData.csv', { flags: 'a'})
+}
+
+const scrapeNextBlock = (block) => {
   return new Promise( (resolve, reject) => {
-    let result = ''
-    let resultError = ''
-    let worker = spawn(`${blockchainCli} ${args.join(' ')}`, {
-      shell: true
-    })
-
-    worker.on('error', (err) => {
-      console.error(`errored with: ${err}`)
-    })
-
-    worker.on('exit', (code, signal) => {
-      if (code !== 0 || signal !== null) {
-        console.warn(`exited with code ${code} and signal: ${signal}`)
-      }
-    })
-
-    worker.on('close', (reason) => {
-      if (reason !== 0) {
-        console.warn(`closed for reason: ${reason}`)
-        reject(resultError)
-      } else {
-        resolve(result)
-      }
-    })
-
-    worker.on('message', (message) => {
-      console.log(`message recieved: ${message}`)
-    })
-
-    worker.stdout.on('data', (data) => {
-      result += data.toString()
-    })
-
-    worker.stderr.on('data', (data) => {
-      resultError += data.toString()
-    })
+    try {
+      resolve(scraper(block, csvWriteStream))
+    } catch (err) {
+      reject(err)
+    }
   })
 }
 
-module.exports = {
-  client,
-  blockchainCli
+const main = () => {
+  if (blockEnd === undefined || typeof(blockEnd) !== 'number') {
+    console.error('Error! BLOCKSCRAPEEND must be defined in your local environment!')
+    process.exit(1)
+  }
+
+  if (cluster.isMaster) {
+    console.log(`Master process ${process.pid} is running`)
+    for (let i = 0; i < cores.length; i++) {
+      cluster.fork()
+    }
+
+    cluster.on('message', (worker, message) => {
+      if (blockHeight <= blockEnd) {
+        if (message === 'beginScraping' && firstBlock === true) {
+          firstBlock = false
+          worker.send('nextBlock')
+        }
+
+        if (message === 'blockDone' || (message === 'beginScraping' && firstBlock === false)) {
+          blockHeight += 1
+          worker.send({ cmd: 'nextBlock', currentBlock: blockHeight })
+        } else {
+          console.error(`Unexpected message: ${message}, shutting down worker with exit code 1`)
+          worker.kill(1)
+        }
+      } else {
+        console.log('No more blocks to scrape! Shutting down worker with exit code 0')
+        worker.kill()
+      }
+    })
+
+    cluster.on('exit', (worker, code, signal) => {
+      console.log(`Worker ${worker.process.pid} died with code ${code} and signal ${signal}`)
+    })
+  } else {
+    console.log(`Worker ${process.pid} started...`)
+
+    process.on('message', async (msg) => {
+      if (!msg || msg.cmd === '') {
+        console.error('Error! Message must be defined and cannot be empty string!')
+        return
+      }
+
+      if (msg.cmd === 'nextBlock') {
+        let result = await scrapeNextBlock(msg.currentBlock)
+        process.send(result)
+      }
+    })
+
+    process.send('beginScraping')
+  }
 }
+
+openCsvWriteStream()
+main()
