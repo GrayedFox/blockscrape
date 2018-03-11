@@ -10,17 +10,17 @@ const blockEnd = process.env.BLOCKSCRAPEEND || 1234100
 const cores = os.cpus()
 
 let blockHeight = blockBegin
+let firstBlock = true
 let csvWriteStream = undefined
 
 const openCsvWriteStream = () => {
   csvWriteStream = fs.createWriteStream('./exportedData.csv', { flags: 'a'})
 }
 
-const scrapeNextBlock = () => {
+const scrapeNextBlock = (block) => {
   return new Promise( (resolve, reject) => {
     try {
-      resolve(scraper(blockHeight, csvWriteStream))
-      blockHeight += 1
+      resolve(scraper(block, csvWriteStream))
     } catch (err) {
       reject(err)
     }
@@ -39,20 +39,22 @@ const main = () => {
       cluster.fork()
     }
 
-    // for (const id in cluster.workers) {
-    //   cluster.workers[id].on('message', messageHandler)
-    // }
-
     cluster.on('message', (worker, message) => {
-      console.log(`Master listened to ${worker.process.pid} send message: ${message}`)
       if (blockHeight <= blockEnd) {
-        if (message === 'beginScraping' || message === 'blockDone') {
+        if (message === 'beginScraping' && firstBlock === true) {
+          firstBlock = false
           worker.send('nextBlock')
+        }
+
+        if (message === 'blockDone' || (message === 'beginScraping' && firstBlock === false)) {
+          blockHeight += 1
+          worker.send({ cmd: 'nextBlock', currentBlock: blockHeight })
         } else {
-          console.error(`Invalid message: ${message}, shutting worker down...`)
+          console.error(`Unexpected message: ${message}, shutting down worker with exit code 1`)
           worker.kill(1)
         }
       } else {
+        console.log('No more blocks to scrape! Shutting down worker with exit code 0')
         worker.kill()
       }
     })
@@ -65,14 +67,13 @@ const main = () => {
 
     process.on('message', async (msg) => {
       console.log(`Message handler recieved: ${msg}`)
-      if (!msg || msg === '') {
+      if (!msg || msg.cmd === '') {
         console.error('Error! Message must be defined and cannot be empty string!')
         return
       }
 
-      if (msg === 'nextBlock') {
-        let result = await scrapeNextBlock()
-        console.log(`Message from scraper: ${result}`)
+      if (msg.cmd === 'nextBlock') {
+        let result = await scrapeNextBlock(msg.currentBlock)
         process.send(result) // should send 'blockDone to master, which sends 'nextBlock' back if blocks remain
       }
     })
