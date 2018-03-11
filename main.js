@@ -6,7 +6,7 @@ const cluster = require('cluster')
 const { scraper } = require('./scraper.js')
 
 const blockBegin = process.env.BLOCKSCRAPEBEGIN || 1234000
-const blockEnd = process.env.BLOCKSCRAPEEND || 1234100
+const blockEnd = process.env.BLOCKSCRAPEEND || 1235000
 const cores = os.cpus()
 
 let blockHeight = blockBegin
@@ -66,7 +66,6 @@ const main = () => {
     console.log(`Worker ${process.pid} started...`)
 
     process.on('message', async (msg) => {
-      console.log(`Message handler recieved: ${msg}`)
       if (!msg || msg.cmd === '') {
         console.error('Error! Message must be defined and cannot be empty string!')
         return
@@ -74,7 +73,7 @@ const main = () => {
 
       if (msg.cmd === 'nextBlock') {
         let result = await scrapeNextBlock(msg.currentBlock)
-        process.send(result) // should send 'blockDone to master, which sends 'nextBlock' back if blocks remain
+        process.send(result)
       }
     })
 
