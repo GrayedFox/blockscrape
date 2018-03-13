@@ -6,14 +6,14 @@ const cluster = require('cluster')
 const { scraper } = require('./scraper.js')
 
 const blockBegin = process.env.BLOCKSCRAPEBEGIN || 1234000
-const blockEnd = process.env.BLOCKSCRAPEEND || 1234005
+const blockEnd = process.env.BLOCKSCRAPEEND || 1234020
 const cores = os.cpus()
 
 let blockHeight = blockBegin
 let firstBlock = true
 let csvWriteStream = undefined
 let lastWrittenBlock = undefined
-let blockData = []
+let blocks = []
 
 const openCsvWriteStream = () => {
   csvWriteStream = fs.createWriteStream('./exportedData.csv', { flags: 'a'})
@@ -47,37 +47,62 @@ const main = () => {
     }
   }
 
-  const storeTransactionData = (txData) => {
-    if (blockData.length === 0) {
-      blockData.push(txData)
-    } else {
-      for (let i = 0; i < blockData.length; i++) {
-        if ((blockData[i][0] + 1) === txData[0]) {
-          blockData = blockData.splice((i + 1), 0, txData)
-        } else if (i === (blockData.length - 1)) {
-            blockData.push(txData)
-          }
-        }
+  const writeBlockData = () => {
+    let blocksToPurge = 0
+
+    for (let i = 0; i < blocks.length; i++) {
+      const currentBlock = blocks[i][0][0]
+
+      if (lastWrittenBlock === undefined && currentBlock === blockBegin) {
+        lastWrittenBlock = blockBegin
+        blocksToPurge += 1
+        writeToCsvFile(blocks[i])
+      }
+
+      if ((lastWrittenBlock + 1) === currentBlock) {
+        lastWrittenBlock += 1
+        blocksToPurge += 1
+        writeToCsvFile(blocks[i])
       }
     }
+
+    blocks = blocks.slice(blocksToPurge)
   }
 
-  const writeBlockData = () => {
-    let blocksToClear = 0
-    for (let i = 0; i < blockData.length; i++) {
-      if (lastWrittenBlock === undefined) {
-        lastWrittenBlock = blockData[i][0]
-        writeToCsvFile(blockData[i])
-      }
+  const storeTransactionData = (txData, txBlockHeight) => {
+    if (txData.length === 0) {
+      blocks.push([[txBlockHeight, 'Has no valid transactions...']])
+    } else {
+      if (blocks.length === 0) {
+        blocks.push(txData)
+      } else {
+        let updatedBlockData = blocks
+        for (let i = 0; i < blocks.length; i++) {
+          const currentBlockNumber = blocks[i][0][0]
+          let nextBlockNumber = undefined
 
-      if ((lastWrittenBlock + 1) === blockData[i][0]) {
-        lastWrittenBlock += 1
-        blocksToClear += 1
-        writeToCsvFile(blockData[i])
+          if (blocks[i+1]) {
+            nextBlockNumber = blocks[i+1][0][0]
+          }
+
+          if (txBlockHeight < currentBlockNumber && i === 0) {
+            updatedBlockData.unshift(txData)
+            break
+          }
+
+          if (txBlockHeight > currentBlockNumber && txBlockHeight < nextBlockNumber && nextBlockNumber) {
+            updatedBlockData.splice((i+1), 0, txData)
+            break
+          }
+
+          if (i + 1 === blocks.length) {
+            updatedBlockData.push(txData)
+            break
+          }
+        }
+        blocks = updatedBlockData
       }
     }
-
-    blockData.slice(blocksToClear)
   }
 
   if (cluster.isMaster) {
@@ -88,7 +113,8 @@ const main = () => {
 
     cluster.on('message', (worker, result) => {
       if (result.data) {
-        writeToCsvFile(result.data)
+        storeTransactionData(result.data, result.block)
+        writeBlockData(result.block)
       }
 
       // block range is inclusive due to incrementing blockHeight before scraping
