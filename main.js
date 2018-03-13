@@ -6,7 +6,7 @@ const cluster = require('cluster')
 const { scraper } = require('./scraper.js')
 
 const blockBegin = process.env.BLOCKSCRAPEBEGIN || 1234000
-const blockEnd = process.env.BLOCKSCRAPEEND || 1234020
+const blockEnd = process.env.BLOCKSCRAPEEND || 1234005
 const cores = os.cpus()
 
 let blockHeight = blockBegin
@@ -52,12 +52,17 @@ const main = () => {
     }
 
     cluster.on('message', (worker, result) => {
-      if (blockHeight <= blockEnd) {
+      if (result.data) {
+        writeToCsvFile(result.data)
+      }
+
+      // block range is inclusive due to incrementing blockHeight before scraping
+      if (blockHeight < blockEnd) {
         switch (result.msg) {
           case 'beginScraping':
             if (firstBlock === true) {
               firstBlock = false
-              worker.send('nextBlock')
+              worker.send({ cmd: 'nextBlock', currentBlock: blockHeight })
             } else {
               blockHeight += 1
               worker.send({ cmd: 'nextBlock', currentBlock: blockHeight })
@@ -67,13 +72,15 @@ const main = () => {
           case 'blockDone':
             blockHeight += 1
             worker.send({ cmd: 'nextBlock', currentBlock: blockHeight })
-            writeToCsvFile(result.data)
             break
 
           default:
             console.error(`Unexpected message: ${JSON.stringify(result)}, shutting down worker with exit code 1`)
             worker.kill(1)
         }
+      } else {
+        console.log('No more blocks to scrape! Shutting worker down...')
+        worker.kill(0)
       }
     })
 
