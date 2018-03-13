@@ -12,6 +12,7 @@ const cores = os.cpus()
 let blockHeight = blockBegin
 let firstBlock = true
 let csvWriteStream = undefined
+let lastWrittenBlock = undefined
 let blockData = []
 
 const openCsvWriteStream = () => {
@@ -52,13 +53,31 @@ const main = () => {
     } else {
       for (let i = 0; i < blockData.length; i++) {
         if ((blockData[i][0] + 1) === txData[0]) {
-          blockData.splice((i + 1), 0, txData)
+          blockData = blockData.splice((i + 1), 0, txData)
         } else if (i === (blockData.length - 1)) {
             blockData.push(txData)
           }
         }
       }
     }
+  }
+
+  const writeBlockData = () => {
+    let blocksToClear = 0
+    for (let i = 0; i < blockData.length; i++) {
+      if (lastWrittenBlock === undefined) {
+        lastWrittenBlock = blockData[i][0]
+        writeToCsvFile(blockData[i])
+      }
+
+      if ((lastWrittenBlock + 1) === blockData[i][0]) {
+        lastWrittenBlock += 1
+        blocksToClear += 1
+        writeToCsvFile(blockData[i])
+      }
+    }
+
+    blockData.slice(blocksToClear)
   }
 
   if (cluster.isMaster) {
