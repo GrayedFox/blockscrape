@@ -55,7 +55,7 @@ const scraper = async (blockHeight) => {
 
     console.log(`Block ${blockHeight} done!`)
 
-    return({ msg: 'blockDone', data: blockTransactionData })
+    return({ msg: 'blockDone', data: blockTransactionData, block: blockHeight })
 
   } catch (err) {
     console.error(err)
