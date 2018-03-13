@@ -12,6 +12,7 @@ const cores = os.cpus()
 let blockHeight = blockBegin
 let firstBlock = true
 let csvWriteStream = undefined
+let blockData = []
 
 const openCsvWriteStream = () => {
   csvWriteStream = fs.createWriteStream('./exportedData.csv', { flags: 'a'})
@@ -40,6 +41,21 @@ const main = () => {
           csvWriteStream.write(`${tx[i]},`)
         } else {
           csvWriteStream.write(`${tx[i]}\n`)
+        }
+      }
+    }
+  }
+
+  const storeTransactionData = (txData) => {
+    if (blockData.length === 0) {
+      blockData.push(txData)
+    } else {
+      for (let i = 0; i < blockData.length; i++) {
+        if ((blockData[i][0] + 1) === txData[0]) {
+          blockData.splice((i + 1), 0, txData)
+        } else if (i === (blockData.length - 1)) {
+            blockData.push(txData)
+          }
         }
       }
     }
