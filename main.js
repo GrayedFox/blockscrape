@@ -6,7 +6,7 @@ const cluster = require('cluster')
 const { scraper } = require('./scraper.js')
 
 const blockBegin = process.env.BLOCKSCRAPEBEGIN || 1234000
-const blockEnd = process.env.BLOCKSCRAPEEND || 1235000
+const blockEnd = process.env.BLOCKSCRAPEEND || 1234020
 const cores = os.cpus()
 
 let blockHeight = blockBegin
@@ -20,7 +20,7 @@ const openCsvWriteStream = () => {
 const scrapeNextBlock = (block) => {
   return new Promise( (resolve, reject) => {
     try {
-      resolve(scraper(block, csvWriteStream))
+      resolve(scraper(block))
     } catch (err) {
       reject(err)
     }
@@ -33,29 +33,47 @@ const main = () => {
     process.exit(1)
   }
 
+  const writeToCsvFile = (txData) => {
+    for (let tx of txData) {
+      for (let i = 0; i < tx.length; i++) {
+        if (i < tx.length - 1) {
+          csvWriteStream.write(`${tx[i]},`)
+        } else {
+          csvWriteStream.write(`${tx[i]}\n`)
+        }
+      }
+    }
+  }
+
   if (cluster.isMaster) {
     console.log(`Master process ${process.pid} is running`)
     for (let i = 0; i < cores.length; i++) {
       cluster.fork()
     }
 
-    cluster.on('message', (worker, message) => {
+    cluster.on('message', (worker, result) => {
       if (blockHeight <= blockEnd) {
-        if (message === 'beginScraping' && firstBlock === true) {
-          firstBlock = false
-          worker.send('nextBlock')
-        }
+        switch (result.msg) {
+          case 'beginScraping':
+            if (firstBlock === true) {
+              firstBlock = false
+              worker.send('nextBlock')
+            } else {
+              blockHeight += 1
+              worker.send({ cmd: 'nextBlock', currentBlock: blockHeight })
+            }
+            break
 
-        if (message === 'blockDone' || (message === 'beginScraping' && firstBlock === false)) {
-          blockHeight += 1
-          worker.send({ cmd: 'nextBlock', currentBlock: blockHeight })
-        } else {
-          console.error(`Unexpected message: ${message}, shutting down worker with exit code 1`)
-          worker.kill(1)
+          case 'blockDone':
+            blockHeight += 1
+            worker.send({ cmd: 'nextBlock', currentBlock: blockHeight })
+            writeToCsvFile(result.data)
+            break
+
+          default:
+            console.error(`Unexpected message: ${JSON.stringify(result)}, shutting down worker with exit code 1`)
+            worker.kill(1)
         }
-      } else {
-        console.log('No more blocks to scrape! Shutting down worker with exit code 0')
-        worker.kill()
       }
     })
 
@@ -66,18 +84,13 @@ const main = () => {
     console.log(`Worker ${process.pid} started...`)
 
     process.on('message', async (msg) => {
-      if (!msg || msg.cmd === '') {
-        console.error('Error! Message must be defined and cannot be empty string!')
-        return
-      }
-
       if (msg.cmd === 'nextBlock') {
         let result = await scrapeNextBlock(msg.currentBlock)
         process.send(result)
       }
     })
 
-    process.send('beginScraping')
+    process.send({ msg: 'beginScraping' })
   }
 }
 
