@@ -50,7 +50,7 @@ const scraper = async (blockHeight) => {
       let txAmount = sumOutputs(tx.vout)
       let fee = await calculateFee(tx, txAmount)
 
-      blockTransactionData.push([txAmount, fee, tx.time, tx.txid, blockHeight])
+      blockTransactionData.push([blockHeight, txAmount, fee, tx.time, tx.txid])
     }
 
     console.log(`Block ${blockHeight} done!`)
