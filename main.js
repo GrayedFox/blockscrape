@@ -109,7 +109,7 @@ const main = () => {
           updatedBlockData.splice((i+1), 0, txData)
           break
         }
-        // push to end of blocks array if on final loop as block height must necessarily be the lowest
+        // push to end of blocks array if on final loop as block height must necessarily be lower than stored blocks
         if (i + 1 === blocks.length) {
           updatedBlockData.push(txData)
           break
