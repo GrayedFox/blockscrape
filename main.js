@@ -73,7 +73,7 @@ const main = () => {
       }
 
       if ((lastWrittenBlock - 1) === currentBlock) {
-        lastWrittenBlock -= 1
+        lastWrittenBlock = currentBlock
         blocksToPurge += 1
         writeToCsvFile(blocks[i])
       }
@@ -82,39 +82,40 @@ const main = () => {
     blocks = blocks.slice(blocksToPurge)
   }
 
+  // store blocks inside blocks array based on block height in descending order
   const storeTransactionData = (txData, txBlockHeight) => {
     if (txData.length === 0) {
-      blocks.push([[txBlockHeight, 'COINBASE TRANSACTION ONLY']])
+      txData = [[txBlockHeight, 'COINBASETRANSACTIONONLY']]
+    }
+
+    if (blocks.length === 0) {
+      blocks.push(txData)
     } else {
-      if (blocks.length === 0) {
-        blocks.push(txData)
-      } else {
-        let updatedBlockData = blocks
-        for (let i = 0; i < blocks.length; i++) {
-          const currentBlockNumber = blocks[i][0][0]
-          let nextBlockNumber = undefined
+      let updatedBlockData = blocks
+      for (let i = 0; i < blocks.length; i++) {
+        const currentBlockHeight = blocks[i][0][0]
+        let nextBlockHeight = undefined
 
-          if (blocks[i+1]) {
-            nextBlockNumber = blocks[i+1][0][0]
-          }
-
-          if (txBlockHeight < currentBlockNumber && i === 0) {
-            updatedBlockData.unshift(txData)
-            break
-          }
-
-          if (txBlockHeight > currentBlockNumber && txBlockHeight < nextBlockNumber && nextBlockNumber) {
-            updatedBlockData.splice((i+1), 0, txData)
-            break
-          }
-
-          if (i + 1 === blocks.length) {
-            updatedBlockData.push(txData)
-            break
-          }
+        if (blocks[i+1]) {
+          nextBlockHeight = blocks[i+1][0][0]
         }
-        blocks = updatedBlockData
+        // push to beginning of blocks array if txBlockHeight higher than block height of first block
+        if (txBlockHeight > currentBlockHeight && i === 0) {
+          updatedBlockData.unshift(txData)
+          break
+        }
+        // squeeze into next slot if txBlockHeight lower than currentBlockHeight and higher than nextBlockHeight
+        if (txBlockHeight < currentBlockHeight && txBlockHeight > nextBlockHeight && nextBlockHeight) {
+          updatedBlockData.splice((i+1), 0, txData)
+          break
+        }
+        // push to end of blocks array if on final loop as block height must necessarily be the lowest
+        if (i + 1 === blocks.length) {
+          updatedBlockData.push(txData)
+          break
+        }
       }
+      blocks = updatedBlockData
     }
   }
 
