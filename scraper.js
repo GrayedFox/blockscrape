@@ -7,12 +7,11 @@ const getMatchingTransactionValue = async (txHash, voutIndex) => {
   let voutArray = undefined
 
   if (lookupTransaction(txHash)) {
-    console.log(`Transaction ${txHash} found! Moimoi bitches!`)
     voutArray = getTransacton(txHash)
   } else {
     tx = await api.getRawTransaction(txHash)
     voutArray = JSON.parse(tx).vout
-    storeTransaction(tx, voutArray)
+    storeTransaction(txHash, voutArray)
   }
 
   for (let i = 0; i < voutArray.length; i++) {
