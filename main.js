@@ -5,7 +5,7 @@ const os = require('os')
 const cluster = require('cluster')
 const { scraper } = require('./scraper.js')
 
-const blockBegin = process.env.BLOCKSCRAPEBEGIN || 1384460
+const blockBegin = process.env.BLOCKSCRAPEBEGIN || 1384500
 const blockEnd = process.env.BLOCKSCRAPEEND || 1384480
 const cores = os.cpus()
 
@@ -72,8 +72,8 @@ const main = () => {
         writeToCsvFile(blocks[i])
       }
 
-      if ((lastWrittenBlock + 1) === currentBlock) {
-        lastWrittenBlock += 1
+      if ((lastWrittenBlock - 1) === currentBlock) {
+        lastWrittenBlock -= 1
         blocksToPurge += 1
         writeToCsvFile(blocks[i])
       }
@@ -133,20 +133,20 @@ const main = () => {
       }
 
       // block range is inclusive due to incrementing blockHeight before scraping
-      if (blockHeight < blockEnd) {
+      if (blockHeight > blockEnd) {
         switch (result.msg) {
           case 'beginScraping':
             if (firstBlock === true) {
               firstBlock = false
               worker.send({ cmd: 'nextBlock', currentBlock: blockHeight })
             } else {
-              blockHeight += 1
+              blockHeight -= 1
               worker.send({ cmd: 'nextBlock', currentBlock: blockHeight })
             }
             break
 
           case 'blockDone':
-            blockHeight += 1
+            blockHeight -= 1
             worker.send({ cmd: 'nextBlock', currentBlock: blockHeight })
             break
 
