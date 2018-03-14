@@ -5,8 +5,8 @@ const os = require('os')
 const cluster = require('cluster')
 const { scraper } = require('./scraper.js')
 
-const blockBegin = process.env.BLOCKSCRAPEBEGIN || 1384480
-const blockEnd = process.env.BLOCKSCRAPEEND || 1384500
+const blockBegin = process.env.BLOCKSCRAPEBEGIN || 1384460
+const blockEnd = process.env.BLOCKSCRAPEEND || 1384480
 const cores = os.cpus()
 
 let blockHeight = blockBegin
@@ -36,15 +36,28 @@ const main = () => {
   }
 
   const writeToCsvFile = (txData) => {
+    let blockToWrite = []
     for (let tx of txData) {
       for (let i = 0; i < tx.length; i++) {
         if (i < tx.length - 1) {
-          csvWriteStream.write(`${tx[i]},`)
+          blockToWrite.push(tx[i])
         } else {
-          csvWriteStream.write(`${tx[i]}\n`)
+          blockToWrite.push(`${tx[i]}\n`)
         }
       }
     }
+
+    let formattedBlock = blockToWrite.reduce( (accumulator, currentValue) => {
+      const stringValue = '' + currentValue
+      if (stringValue.endsWith('\n')) {
+        accumulator += `${stringValue}`
+      } else {
+        accumulator += `${stringValue},`
+      }
+      return accumulator
+    }, '')
+
+    csvWriteStream.write(formattedBlock)
   }
 
   const writeBlockData = () => {
@@ -71,7 +84,7 @@ const main = () => {
 
   const storeTransactionData = (txData, txBlockHeight) => {
     if (txData.length === 0) {
-      blocks.push([[txBlockHeight, 'Has no valid transactions...']])
+      blocks.push([[txBlockHeight, 'COINBASE TRANSACTION ONLY']])
     } else {
       if (blocks.length === 0) {
         blocks.push(txData)
