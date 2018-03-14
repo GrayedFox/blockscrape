@@ -5,8 +5,8 @@ const os = require('os')
 const cluster = require('cluster')
 const { scraper } = require('./scraper.js')
 
-const blockBegin = process.env.BLOCKSCRAPEBEGIN || 1234000
-const blockEnd = process.env.BLOCKSCRAPEEND || 1234020
+const blockBegin = process.env.BLOCKSCRAPEBEGIN || 1384500
+const blockEnd = process.env.BLOCKSCRAPEEND || 1384480
 const cores = os.cpus()
 
 let blockHeight = blockBegin
@@ -16,7 +16,7 @@ let lastWrittenBlock = undefined
 let blocks = []
 
 const openCsvWriteStream = () => {
-  csvWriteStream = fs.createWriteStream('./exportedData.csv', { flags: 'a'})
+  csvWriteStream = fs.createWriteStream('./exportedData.csv', { flags: 'a' })
 }
 
 const scrapeNextBlock = (block) => {
@@ -36,15 +36,28 @@ const main = () => {
   }
 
   const writeToCsvFile = (txData) => {
+    let blockToWrite = []
     for (let tx of txData) {
       for (let i = 0; i < tx.length; i++) {
         if (i < tx.length - 1) {
-          csvWriteStream.write(`${tx[i]},`)
+          blockToWrite.push(tx[i])
         } else {
-          csvWriteStream.write(`${tx[i]}\n`)
+          blockToWrite.push(`${tx[i]}\n`)
         }
       }
     }
+
+    let formattedBlock = blockToWrite.reduce( (accumulator, currentValue) => {
+      const stringValue = '' + currentValue
+      if (stringValue.endsWith('\n')) {
+        accumulator += `${stringValue}`
+      } else {
+        accumulator += `${stringValue},`
+      }
+      return accumulator
+    }, '')
+
+    csvWriteStream.write(formattedBlock)
   }
 
   const writeBlockData = () => {
@@ -59,8 +72,8 @@ const main = () => {
         writeToCsvFile(blocks[i])
       }
 
-      if ((lastWrittenBlock + 1) === currentBlock) {
-        lastWrittenBlock += 1
+      if ((lastWrittenBlock - 1) === currentBlock) {
+        lastWrittenBlock = currentBlock
         blocksToPurge += 1
         writeToCsvFile(blocks[i])
       }
@@ -69,44 +82,47 @@ const main = () => {
     blocks = blocks.slice(blocksToPurge)
   }
 
+  // store blocks inside blocks array based on block height in descending order
   const storeTransactionData = (txData, txBlockHeight) => {
     if (txData.length === 0) {
-      blocks.push([[txBlockHeight, 'Has no valid transactions...']])
+      txData = [[txBlockHeight, 'COINBASETRANSACTIONONLY']]
+    }
+
+    if (blocks.length === 0) {
+      blocks.push(txData)
     } else {
-      if (blocks.length === 0) {
-        blocks.push(txData)
-      } else {
-        let updatedBlockData = blocks
-        for (let i = 0; i < blocks.length; i++) {
-          const currentBlockNumber = blocks[i][0][0]
-          let nextBlockNumber = undefined
+      let updatedBlockData = blocks
+      for (let i = 0; i < blocks.length; i++) {
+        const currentBlockHeight = blocks[i][0][0]
+        let nextBlockHeight = undefined
 
-          if (blocks[i+1]) {
-            nextBlockNumber = blocks[i+1][0][0]
-          }
-
-          if (txBlockHeight < currentBlockNumber && i === 0) {
-            updatedBlockData.unshift(txData)
-            break
-          }
-
-          if (txBlockHeight > currentBlockNumber && txBlockHeight < nextBlockNumber && nextBlockNumber) {
-            updatedBlockData.splice((i+1), 0, txData)
-            break
-          }
-
-          if (i + 1 === blocks.length) {
-            updatedBlockData.push(txData)
-            break
-          }
+        if (blocks[i+1]) {
+          nextBlockHeight = blocks[i+1][0][0]
         }
-        blocks = updatedBlockData
+        // push to beginning of blocks array if txBlockHeight higher than block height of first block
+        if (txBlockHeight > currentBlockHeight && i === 0) {
+          updatedBlockData.unshift(txData)
+          break
+        }
+        // squeeze into next slot if txBlockHeight lower than currentBlockHeight and higher than nextBlockHeight
+        if (txBlockHeight < currentBlockHeight && txBlockHeight > nextBlockHeight && nextBlockHeight) {
+          updatedBlockData.splice((i+1), 0, txData)
+          break
+        }
+        // push to end of blocks array if on final loop as block height must necessarily be lower than stored blocks
+        if (i + 1 === blocks.length) {
+          updatedBlockData.push(txData)
+          break
+        }
       }
+      blocks = updatedBlockData
     }
   }
 
   if (cluster.isMaster) {
     console.log(`Master process ${process.pid} is running`)
+    openCsvWriteStream()
+
     for (let i = 0; i < cores.length; i++) {
       cluster.fork()
     }
@@ -118,20 +134,20 @@ const main = () => {
       }
 
       // block range is inclusive due to incrementing blockHeight before scraping
-      if (blockHeight < blockEnd) {
+      if (blockHeight > blockEnd) {
         switch (result.msg) {
           case 'beginScraping':
             if (firstBlock === true) {
               firstBlock = false
               worker.send({ cmd: 'nextBlock', currentBlock: blockHeight })
             } else {
-              blockHeight += 1
+              blockHeight -= 1
               worker.send({ cmd: 'nextBlock', currentBlock: blockHeight })
             }
             break
 
           case 'blockDone':
-            blockHeight += 1
+            blockHeight -= 1
             worker.send({ cmd: 'nextBlock', currentBlock: blockHeight })
             break
 
@@ -162,5 +178,4 @@ const main = () => {
   }
 }
 
-openCsvWriteStream()
 main()

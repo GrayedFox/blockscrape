@@ -62,3 +62,6 @@ typings/
 
 # exported csv files
 *.csv
+
+# ignore local debug file used for testing
+debug.js
