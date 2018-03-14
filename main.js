@@ -5,8 +5,8 @@ const os = require('os')
 const cluster = require('cluster')
 const { scraper } = require('./scraper.js')
 
-const blockBegin = process.env.BLOCKSCRAPEBEGIN || 1234000
-const blockEnd = process.env.BLOCKSCRAPEEND || 1234020
+const blockBegin = process.env.BLOCKSCRAPEBEGIN || 1384480
+const blockEnd = process.env.BLOCKSCRAPEEND || 1384500
 const cores = os.cpus()
 
 let blockHeight = blockBegin
@@ -16,7 +16,7 @@ let lastWrittenBlock = undefined
 let blocks = []
 
 const openCsvWriteStream = () => {
-  csvWriteStream = fs.createWriteStream('./exportedData.csv', { flags: 'a'})
+  csvWriteStream = fs.createWriteStream('./exportedData.csv', { flags: 'a' })
 }
 
 const scrapeNextBlock = (block) => {
@@ -107,6 +107,8 @@ const main = () => {
 
   if (cluster.isMaster) {
     console.log(`Master process ${process.pid} is running`)
+    openCsvWriteStream()
+
     for (let i = 0; i < cores.length; i++) {
       cluster.fork()
     }
@@ -162,5 +164,4 @@ const main = () => {
   }
 }
 
-openCsvWriteStream()
 main()

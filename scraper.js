@@ -36,30 +36,26 @@ const testTransaction = async (txHash) => {
 }
 
 const scraper = async (blockHeight) => {
-  try {
-    let blockHash = await api.getBlockHashByHeight(blockHeight)
-    let block = await api.getBlock(blockHash)
-    let transactions = JSON.parse(block).tx
-    let blockTransactionData = []
+  let blockHash = await api.getBlockHashByHeight(blockHeight)
+  let block = await api.getBlock(blockHash)
+  let transactions = JSON.parse(block).tx
+  let blockTransactionData = []
 
-    // skip the generation transaction (coinbase) when scraping
-    for (let i = 1; i < transactions.length; i++) {
-      let tx = await api.getRawTransaction(transactions[i])
-      tx = JSON.parse(tx)
+  // skip the generation transaction (coinbase) when scraping
+  for (let i = 1; i < transactions.length; i++) {
+    let tx = await api.getRawTransaction(transactions[i])
+    tx = JSON.parse(tx)
 
-      let txAmount = sumOutputs(tx.vout)
-      let fee = await calculateFee(tx, txAmount)
+    let txAmount = sumOutputs(tx.vout)
+    let fee = await calculateFee(tx, txAmount)
 
-      blockTransactionData.push([blockHeight, txAmount, fee, tx.time, tx.txid])
-    }
-
-    console.log(`Block ${blockHeight} done!`)
-
-    return({ msg: 'blockDone', data: blockTransactionData, block: blockHeight })
-
-  } catch (err) {
-    console.error(err)
+    blockTransactionData.push([blockHeight, txAmount, fee, tx.time, tx.txid])
   }
+
+  console.log(`Block ${blockHeight} done!`)
+
+  return({ msg: 'blockDone', data: blockTransactionData, block: blockHeight })
+
 }
 
 module.exports = {
