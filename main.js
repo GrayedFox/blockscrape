@@ -17,24 +17,7 @@ let csvWriteStream = undefined
 
 const openCsvWriteStream = () => { csvWriteStream = fs.createWriteStream('./exportedData.csv', { flags: 'a' }) }
 
-// const readLastBlockFromFile = () => {
-//   fs.readFile('./lastBlock', { encoding: 'utf8' }, (err, data) => {
-//     if (err) {
-//       throw err
-//     }
-//     return data
-//   })
-// }
-//
-// const getLastBlockFromFile = () => {
-//   return new Promise( (resolve, reject) => {
-//     try {
-//       resolve(readLastBlockFromFile())
-//     } catch (error) {
-//       reject(error)
-//     }
-//   })
-// }
+const lastWrittenBlockFromFile = () => fs.readFileSync('./last-written-block', { encoding: 'utf8' })
 
 const scrapeNextBlock = (block) => {
   return new Promise( (resolve, reject) => {
@@ -47,7 +30,6 @@ const scrapeNextBlock = (block) => {
 }
 
 const main = () => {
-
   const writeToCsvFile = (txData) => {
     let blockToWrite = []
     for (let tx of txData) {
@@ -72,7 +54,6 @@ const main = () => {
 
     csvWriteStream.write(formattedBlock)
     fs.writeFileSync('./lastBlock', txData[0][0])
-    console.log('Wrote data')
   }
 
   const writeBlockData = () => {
@@ -82,7 +63,7 @@ const main = () => {
       const currentBlockHeight = blocks[i][0][0]
 
       if (lastWrittenBlock === undefined && currentBlockHeight === blockBegin) {
-        lastWrittenBlock = blockBegin
+        lastWrittenBlock = currentBlockHeight
         blocksToPurge += 1
         writeToCsvFile(blocks[i])
       }
@@ -135,17 +116,19 @@ const main = () => {
   }
 
   if (cluster.isMaster) {
-    console.log(`Master process ${process.pid} is running`)
     if (blockHeight === undefined) {
-      blockBegin = 1379582 // await getLastBlockFromFile()
+      blockBegin = (lastWrittenBlockFromFile() - 1)
       blockHeight = blockBegin
-      console.log(`Block begin set to: ${blockBegin}`)
     }
 
     if (blockEnd === undefined || typeof(blockEnd) !== 'number') {
       console.error('Error! BLOCKSCRAPEEND must be defined in your local environment!')
       process.exit(1)
     }
+
+    console.log(`Master process ${process.pid} is running`)
+    console.log(`Starting block set to: ${blockBegin}`)
+    console.log(`Final block set to: ${blockEnd}`)
 
     openCsvWriteStream()
 
