@@ -6,52 +6,49 @@ const cluster = require('cluster')
 const { scraper } = require('./scraper.js')
 const cores = os.cpus()
 
-const blockEnd = process.env.BLOCKSCRAPEEND || 0
 let blockBegin = process.env.BLOCKSCRAPEBEGIN
+const blockEnd = process.env.BLOCKSCRAPEEND || 0
 
 let blockHeight = blockBegin
 let firstBlock = true
 let blocks = []
 let lastWrittenBlock = undefined
 let csvWriteStream = undefined
-let lastBlockWriteStream = undefined
 
 const openCsvWriteStream = () => { csvWriteStream = fs.createWriteStream('./exportedData.csv', { flags: 'a' }) }
 
-const openLastBlockWriteStream = () => { lastBlockWriteStream = fs.createWriteStream('./lastblock') }
-
-const readLastBlockFromFile = () => {
-  fs.readFile('./lastBlock', { encoding: 'utf8' }, (err, data) => {
-    if (err) {
-      throw err
-    }
-    return data
-  })
-}
+// const readLastBlockFromFile = () => {
+//   fs.readFile('./lastBlock', { encoding: 'utf8' }, (err, data) => {
+//     if (err) {
+//       throw err
+//     }
+//     return data
+//   })
+// }
+//
+// const getLastBlockFromFile = () => {
+//   return new Promise( (resolve, reject) => {
+//     try {
+//       resolve(readLastBlockFromFile())
+//     } catch (error) {
+//       reject(error)
+//     }
+//   })
+// }
 
 const scrapeNextBlock = (block) => {
   return new Promise( (resolve, reject) => {
     try {
       resolve(scraper(block))
-    } catch (err) {
-      reject(err)
+    } catch (error) {
+      reject(error)
     }
   })
 }
 
 const main = () => {
-  if (blockEnd === undefined || typeof(blockEnd) !== 'number') {
-    console.error('Error! BLOCKSCRAPEEND must be defined in your local environment!')
-    process.exit(1)
-  }
 
-  if (blockHeight === undefined) {
-    blockBegin = readLastBlockFromFile()
-    blockHeight = blockBegin
-    console.log(blockHeight)
-  }
-
-  const writeDataToStreams = (txData) => {
+  const writeToCsvFile = (txData) => {
     let blockToWrite = []
     for (let tx of txData) {
       for (let i = 0; i < tx.length; i++) {
@@ -74,8 +71,8 @@ const main = () => {
     }, '')
 
     csvWriteStream.write(formattedBlock)
-    lastBlockWriteStream.write(txData[0][0])
-    console.log(`last block exported: ${txData[0][0]}`)
+    fs.writeFileSync('./lastBlock', txData[0][0])
+    console.log('Wrote data')
   }
 
   const writeBlockData = () => {
@@ -87,13 +84,13 @@ const main = () => {
       if (lastWrittenBlock === undefined && currentBlockHeight === blockBegin) {
         lastWrittenBlock = blockBegin
         blocksToPurge += 1
-        writeDataToStreams(blocks[i])
+        writeToCsvFile(blocks[i])
       }
 
       if ((lastWrittenBlock - 1) === currentBlockHeight) {
         lastWrittenBlock = currentBlockHeight
         blocksToPurge += 1
-        writeDataToStreams(blocks[i])
+        writeToCsvFile(blocks[i])
       }
     }
 
@@ -139,8 +136,18 @@ const main = () => {
 
   if (cluster.isMaster) {
     console.log(`Master process ${process.pid} is running`)
+    if (blockHeight === undefined) {
+      blockBegin = 1379582 // await getLastBlockFromFile()
+      blockHeight = blockBegin
+      console.log(`Block begin set to: ${blockBegin}`)
+    }
+
+    if (blockEnd === undefined || typeof(blockEnd) !== 'number') {
+      console.error('Error! BLOCKSCRAPEEND must be defined in your local environment!')
+      process.exit(1)
+    }
+
     openCsvWriteStream()
-    openLastBlockWriteStream()
 
     for (let i = 0; i < cores.length; i++) {
       cluster.fork()
