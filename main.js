@@ -6,8 +6,8 @@ const cluster = require('cluster')
 const { scraper } = require('./scraper.js')
 const { takeMemorySnapshot } = require('./debug.js')
 
-const blockBegin = process.env.BLOCKSCRAPEBEGIN || 1380603
-const blockEnd = process.env.BLOCKSCRAPEEND || 1370000
+const blockBegin = process.env.BLOCKSCRAPEBEGIN || 1379480
+const blockEnd = process.env.BLOCKSCRAPEEND || 1379430
 const cores = os.cpus()
 
 let blockHeight = blockBegin

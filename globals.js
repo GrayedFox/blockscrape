@@ -8,8 +8,6 @@ const transactionExists = (tx) => transactions[tx] ? true : false
 
 const retrieveTransaction = (tx) => transactions[tx]
 
-const clearTransaction = (tx) => { delete transactions[tx] }
-
 // loop through the outputs of a tx, greedily returning the value of an output tx where n matches vOutIdx
 const getMatchingTransactionValue = async (txHash, voutIndex) => {
   let tx = undefined
@@ -17,7 +15,6 @@ const getMatchingTransactionValue = async (txHash, voutIndex) => {
 
   if (transactionExists(txHash)) {
     voutArray = retrieveTransaction(txHash)
-    clearTransaction(txHash)
   } else {
     tx = await api.getRawTransaction(txHash)
     voutArray = JSON.parse(tx).vout
