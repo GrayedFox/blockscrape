@@ -4,9 +4,10 @@ const fs = require('fs')
 const os = require('os')
 const cluster = require('cluster')
 const { scraper } = require('./scraper.js')
+const { takeMemorySnapshot } = require('./debug.js')
 
-const blockBegin = process.env.BLOCKSCRAPEBEGIN || 1384500
-const blockEnd = process.env.BLOCKSCRAPEEND || 1384480
+const blockBegin = process.env.BLOCKSCRAPEBEGIN || 1380603
+const blockEnd = process.env.BLOCKSCRAPEEND || 1370000
 const cores = os.cpus()
 
 let blockHeight = blockBegin
@@ -14,6 +15,7 @@ let firstBlock = true
 let csvWriteStream = undefined
 let lastWrittenBlock = undefined
 let blocks = []
+let snapshotBlockCount = 0
 
 const openCsvWriteStream = () => {
   csvWriteStream = fs.createWriteStream('./exportedData.csv', { flags: 'a' })
@@ -69,14 +71,21 @@ const main = () => {
       if (lastWrittenBlock === undefined && currentBlock === blockBegin) {
         lastWrittenBlock = blockBegin
         blocksToPurge += 1
+        snapshotBlockCount += 1
         writeToCsvFile(blocks[i])
       }
 
       if ((lastWrittenBlock - 1) === currentBlock) {
         lastWrittenBlock = currentBlock
         blocksToPurge += 1
+        snapshotBlockCount += 1
         writeToCsvFile(blocks[i])
       }
+    }
+
+    if (snapshotBlockCount >= 200) {
+      snapshotBlockCount = 0
+      takeMemorySnapshot()
     }
 
     blocks = blocks.slice(blocksToPurge)
