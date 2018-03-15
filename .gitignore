@@ -63,5 +63,6 @@ typings/
 # exported csv files
 *.csv
 
-# ignore local debug file used for testing
+# ignore local debug files used for testing
 debug.js
+*.heapsnapshot
