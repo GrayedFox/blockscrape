@@ -4,21 +4,29 @@ const fs = require('fs')
 const os = require('os')
 const cluster = require('cluster')
 const { scraper } = require('./scraper.js')
-const { takeMemorySnapshot } = require('./debug.js')
-
-const blockBegin = process.env.BLOCKSCRAPEBEGIN || 1379480
-const blockEnd = process.env.BLOCKSCRAPEEND || 1379430
 const cores = os.cpus()
+
+const blockEnd = process.env.BLOCKSCRAPEEND || 0
+let blockBegin = process.env.BLOCKSCRAPEBEGIN
 
 let blockHeight = blockBegin
 let firstBlock = true
-let csvWriteStream = undefined
-let lastWrittenBlock = undefined
 let blocks = []
-let snapshotBlockCount = 0
+let lastWrittenBlock = undefined
+let csvWriteStream = undefined
+let lastBlockWriteStream = undefined
 
-const openCsvWriteStream = () => {
-  csvWriteStream = fs.createWriteStream('./exportedData.csv', { flags: 'a' })
+const openCsvWriteStream = () => { csvWriteStream = fs.createWriteStream('./exportedData.csv', { flags: 'a' }) }
+
+const openLastBlockWriteStream = () => { lastBlockWriteStream = fs.createWriteStream('./lastblock') }
+
+const readLastBlockFromFile = () => {
+  fs.readFile('./lastBlock', { encoding: 'utf8' }, (err, data) => {
+    if (err) {
+      throw err
+    }
+    return data
+  })
 }
 
 const scrapeNextBlock = (block) => {
@@ -37,7 +45,13 @@ const main = () => {
     process.exit(1)
   }
 
-  const writeToCsvFile = (txData) => {
+  if (blockHeight === undefined) {
+    blockBegin = readLastBlockFromFile()
+    blockHeight = blockBegin
+    console.log(blockHeight)
+  }
+
+  const writeDataToStreams = (txData) => {
     let blockToWrite = []
     for (let tx of txData) {
       for (let i = 0; i < tx.length; i++) {
@@ -60,32 +74,27 @@ const main = () => {
     }, '')
 
     csvWriteStream.write(formattedBlock)
+    lastBlockWriteStream.write(txData[0][0])
+    console.log(`last block exported: ${txData[0][0]}`)
   }
 
   const writeBlockData = () => {
     let blocksToPurge = 0
 
     for (let i = 0; i < blocks.length; i++) {
-      const currentBlock = blocks[i][0][0]
+      const currentBlockHeight = blocks[i][0][0]
 
-      if (lastWrittenBlock === undefined && currentBlock === blockBegin) {
+      if (lastWrittenBlock === undefined && currentBlockHeight === blockBegin) {
         lastWrittenBlock = blockBegin
         blocksToPurge += 1
-        snapshotBlockCount += 1
-        writeToCsvFile(blocks[i])
+        writeDataToStreams(blocks[i])
       }
 
-      if ((lastWrittenBlock - 1) === currentBlock) {
-        lastWrittenBlock = currentBlock
+      if ((lastWrittenBlock - 1) === currentBlockHeight) {
+        lastWrittenBlock = currentBlockHeight
         blocksToPurge += 1
-        snapshotBlockCount += 1
-        writeToCsvFile(blocks[i])
+        writeDataToStreams(blocks[i])
       }
-    }
-
-    if (snapshotBlockCount >= 200) {
-      snapshotBlockCount = 0
-      takeMemorySnapshot()
     }
 
     blocks = blocks.slice(blocksToPurge)
@@ -131,6 +140,7 @@ const main = () => {
   if (cluster.isMaster) {
     console.log(`Master process ${process.pid} is running`)
     openCsvWriteStream()
+    openLastBlockWriteStream()
 
     for (let i = 0; i < cores.length; i++) {
       cluster.fork()
