@@ -13,9 +13,9 @@ const csvFile = `${path.resolve(__dirname)}/exportedData.csv`
 const blockEnd = process.env.BLOCKSCRAPEEND || 0
 let blockBegin = process.env.BLOCKSCRAPEBEGIN
 
-let blockHeight = blockBegin
-let firstBlock = true
 let blocks = []
+let firstBlock = true
+let blockHeight = undefined
 let lastWrittenBlock = undefined
 let csvWriteStream = undefined
 
@@ -120,15 +120,11 @@ const main = () => {
   }
 
   if (cluster.isMaster) {
-    if (blockHeight === undefined) {
+    if (blockBegin === undefined) {
       blockBegin = (lastWrittenBlockFromFile() - 1)
-      blockHeight = blockBegin
     }
 
-    if (blockEnd === undefined || typeof(blockEnd) !== 'number') {
-      console.error('Error! BLOCKSCRAPEEND must be defined in your local environment!')
-      process.exit(1)
-    }
+    blockHeight = blockBegin
 
     console.log(`Master process ${process.pid} is running`)
     console.log(`Starting block set to: ${blockBegin}`)
