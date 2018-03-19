@@ -3,10 +3,12 @@
 const fs = require('fs')
 const os = require('os')
 const cluster = require('cluster')
+const path = require('path')
 const { scraper } = require('./scraper.js')
 
 const cores = os.cpus()
-const lastWrittenBlockFile = './last-written-block'
+const lastWrittenBlockFile = `${path.resolve(__dirname)}/last-written-block`
+const csvFile = `${path.resolve(__dirname)}/exportedData.csv`
 
 const blockEnd = process.env.BLOCKSCRAPEEND || 0
 let blockBegin = process.env.BLOCKSCRAPEBEGIN
@@ -17,7 +19,7 @@ let blocks = []
 let lastWrittenBlock = undefined
 let csvWriteStream = undefined
 
-const openCsvWriteStream = () => { csvWriteStream = fs.createWriteStream('./exportedData.csv', { flags: 'a' }) }
+const openCsvWriteStream = () => { csvWriteStream = fs.createWriteStream(csvFile, { flags: 'a' }) }
 
 const lastWrittenBlockFromFile = () => fs.readFileSync(lastWrittenBlockFile, { encoding: 'utf8' })
 
