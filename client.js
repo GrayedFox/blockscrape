@@ -12,7 +12,7 @@ const client = (args) => {
     let result = ''
     let resultError = ''
     let child = spawn(`${blockchainCli} ${args.join(' ')}`, {
-      shell: true
+      shell: '/bin/bash'
     })
 
     child.on('error', (err) => {
