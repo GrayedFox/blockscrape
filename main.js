@@ -15,7 +15,6 @@ let blockBegin = process.env.BLOCKSCRAPEBEGIN
 
 let blocksToWrite = []
 let firstBlock = true
-let totalBlocksWritten = 0
 let blockHeight = undefined
 let lastProcessedBlock = undefined
 let csvWriteStream = undefined
@@ -47,7 +46,8 @@ const main = () => {
       }
     }
 
-    let formattedBlock = blockToWrite.reduce( (accumulator, currentValue) => {
+    // create formatted string of all txs in block in order to write entire blocks contents in single write
+    let formattedTransactions = blockToWrite.reduce( (accumulator, currentValue) => {
       const stringValue = '' + currentValue
       if (stringValue.endsWith('\n')) {
         accumulator += `${stringValue}`
@@ -57,14 +57,8 @@ const main = () => {
       return accumulator
     }, '')
 
-    csvWriteStream.write(formattedBlock)
+    csvWriteStream.write(formattedTransactions)
     fs.writeFileSync(lastWrittenBlockFile, txData[0][0])
-    totalBlocksWritten += 1
-
-    if (totalBlocksWritten >= 1000) {
-      console.log(`Processed ${totalBlocksWritten}, exiting gracefully!`)
-      process.exit(0)
-    }
   }
 
   const writeBlockData = () => {
