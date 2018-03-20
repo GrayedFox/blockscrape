@@ -23,8 +23,10 @@ const getInfo = () => {
   return client([blockchain.getInfo])
 }
 
-const getRawTransaction = (txHash, verbose = true) => {
-  return client([blockchain.getRawTransaction, txHash, verbose])
+const getRawTransaction = async (txHash, verbose = true) => {
+  const result = await client([blockchain.getRawTransaction, txHash, verbose])
+  cache(['set', txHash, JSON.parse(result).vout])
+  return result
 }
 
 const getRawTransactionVout = async (txHash, verbose = true) => {
