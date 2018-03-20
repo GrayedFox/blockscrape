@@ -1,12 +1,15 @@
 const { spawn } = require('child_process')
-const LRU = require('lru-cache')
+const { LRUMap } = require('lru_map')
+// const LRU = require('lru-cache')
 
 const blockchainCli = process.env.BLOCKSCRAPECLI || 'litecoin-cli'
 
-let lruCache = LRU({
-  max: 5000,
-  maxAge: 1000 * 60 * 10
-})
+// let lruCache = LRU({
+//   max: 5000,
+//   maxAge: 1000 * 60 * 20
+// })
+
+let lruCache = new LRUMap(5000)
 
 // args should be an array structured like [operation, key, value]
 const cache = (args) => {
