@@ -10,7 +10,7 @@ const cores = os.cpus()
 const lastWrittenBlockFile = `${path.resolve(__dirname)}/last-written-block`
 const csvFile = `${path.resolve(__dirname)}/exportedData.csv`
 
-const blockEnd = process.env.BLOCKSCRAPEEND || 0
+const blockEnd = process.env.BLOCKSCRAPEEND || 1366270
 let blockBegin = process.env.BLOCKSCRAPEBEGIN
 
 let blocksToWrite = []
