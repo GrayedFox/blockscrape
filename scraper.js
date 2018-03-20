@@ -20,7 +20,7 @@ const scraper = async (blockHeight) => {
 
   console.log(`Block ${blockHeight} done after processing ${transactions.length - 1} transactions!`)
 
-  return({ msg: 'blockDone', data: blockTransactionData, block: blockHeight })
+  return({ msg: 'blockDone', data: blockTransactionData, block: blockHeight, txTotal: transactions.length - 1 })
 }
 
 module.exports = {
