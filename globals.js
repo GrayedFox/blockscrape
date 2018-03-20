@@ -1,24 +1,23 @@
 const api = require('./api/api.js')
 
-let transactions = {}
-
-const storeTransaction = (tx, vout) => { transactions[tx] = vout }
-
-const transactionExists = (tx) => transactions[tx] ? true : false
-
-const retrieveTransaction = (tx) => transactions[tx]
+let transactions = new Map()
 
 // loop through the outputs of a tx, greedily returning the value of an output tx where n matches vOutIdx
 const getMatchingTransactionValue = async (txHash, voutIndex) => {
   let tx = undefined
   let voutArray = undefined
 
-  if (transactionExists(txHash)) {
-    voutArray = retrieveTransaction(txHash)
+  if (transactions.has(txHash)) {
+    voutArray = transactions.get(txHash)
   } else {
     tx = await api.getRawTransaction(txHash)
     voutArray = JSON.parse(tx).vout
-    storeTransaction(txHash, voutArray)
+    transactions.set(txHash, voutArray)
+  }
+
+  if (transactions.size > 5000) {
+    console.warn('Memoized transactions over five thousand!!!!!!!!!')
+    transactions.clear()
   }
 
   for (let i = 0; i < voutArray.length; i++) {
