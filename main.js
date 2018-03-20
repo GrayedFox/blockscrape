@@ -13,10 +13,11 @@ const csvFile = `${path.resolve(__dirname)}/exportedData.csv`
 const blockEnd = process.env.BLOCKSCRAPEEND || 0
 let blockBegin = process.env.BLOCKSCRAPEBEGIN
 
-let blocks = []
+let blocksToWrite = []
 let firstBlock = true
+let totalBlocksWritten = 0
 let blockHeight = undefined
-let lastWrittenBlock = undefined
+let lastProcessedBlock = undefined
 let csvWriteStream = undefined
 
 const openCsvWriteStream = () => { csvWriteStream = fs.createWriteStream(csvFile, { flags: 'a' }) }
@@ -58,28 +59,34 @@ const main = () => {
 
     csvWriteStream.write(formattedBlock)
     fs.writeFileSync(lastWrittenBlockFile, txData[0][0])
+    totalBlocksWritten += 1
+
+    if (totalBlocksWritten >= 1000) {
+      console.log(`Processed ${totalBlocksWritten}, exiting gracefully!`)
+      process.exit(0)
+    }
   }
 
   const writeBlockData = () => {
     let blocksToPurge = 0
 
-    for (let i = 0; i < blocks.length; i++) {
-      const currentBlockHeight = blocks[i][0][0]
+    for (let i = 0; i < blocksToWrite.length; i++) {
+      const currentBlockHeight = blocksToWrite[i][0][0]
 
-      if (lastWrittenBlock === undefined && currentBlockHeight === blockBegin) {
-        lastWrittenBlock = currentBlockHeight
+      if (lastProcessedBlock === undefined && currentBlockHeight === blockBegin) {
+        lastProcessedBlock = currentBlockHeight
         blocksToPurge += 1
-        writeToCsvFile(blocks[i])
+        writeToCsvFile(blocksToWrite[i])
       }
 
-      if ((lastWrittenBlock - 1) === currentBlockHeight) {
-        lastWrittenBlock = currentBlockHeight
+      if ((lastProcessedBlock - 1) === currentBlockHeight) {
+        lastProcessedBlock = currentBlockHeight
         blocksToPurge += 1
-        writeToCsvFile(blocks[i])
+        writeToCsvFile(blocksToWrite[i])
       }
     }
 
-    blocks = blocks.slice(blocksToPurge)
+    blocksToWrite = blocksToWrite.slice(blocksToPurge)
   }
 
   // store blocks inside blocks array based on block height in descending order
@@ -88,16 +95,16 @@ const main = () => {
       txData = [[txBlockHeight, 'COINBASETRANSACTIONONLY']]
     }
 
-    if (blocks.length === 0) {
-      blocks.push(txData)
+    if (blocksToWrite.length === 0) {
+      blocksToWrite.push(txData)
     } else {
-      let updatedBlockData = blocks
-      for (let i = 0; i < blocks.length; i++) {
-        const currentBlockHeight = blocks[i][0][0]
+      let updatedBlockData = blocksToWrite
+      for (let i = 0; i < blocksToWrite.length; i++) {
+        const currentBlockHeight = blocksToWrite[i][0][0]
         let nextBlockHeight = undefined
 
-        if (blocks[i+1]) {
-          nextBlockHeight = blocks[i+1][0][0]
+        if (blocksToWrite[i+1]) {
+          nextBlockHeight = blocksToWrite[i+1][0][0]
         }
         // push to beginning of blocks array if txBlockHeight higher than block height of first block
         if (txBlockHeight > currentBlockHeight && i === 0) {
@@ -110,12 +117,12 @@ const main = () => {
           break
         }
         // push to end of blocks array if on final loop as block height must necessarily be lower than stored blocks
-        if (i + 1 === blocks.length) {
+        if (i + 1 === blocksToWrite.length) {
           updatedBlockData.push(txData)
           break
         }
       }
-      blocks = updatedBlockData
+      blocksToWrite = updatedBlockData
     }
   }
 
@@ -148,16 +155,16 @@ const main = () => {
           case 'beginScraping':
             if (firstBlock === true) {
               firstBlock = false
-              worker.send({ cmd: 'nextBlock', currentBlock: blockHeight })
+              worker.send({ cmd: 'nextBlock', nextBlock: blockHeight })
             } else {
               blockHeight -= 1
-              worker.send({ cmd: 'nextBlock', currentBlock: blockHeight })
+              worker.send({ cmd: 'nextBlock', nextBlock: blockHeight })
             }
             break
 
           case 'blockDone':
             blockHeight -= 1
-            worker.send({ cmd: 'nextBlock', currentBlock: blockHeight })
+            worker.send({ cmd: 'nextBlock', nextBlock: blockHeight })
             break
 
           default:
@@ -178,7 +185,7 @@ const main = () => {
 
     process.on('message', async (msg) => {
       if (msg.cmd === 'nextBlock') {
-        let result = await scrapeNextBlock(msg.currentBlock)
+        let result = await scrapeNextBlock(msg.nextBlock)
         process.send(result)
       }
     })
