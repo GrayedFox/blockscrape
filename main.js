@@ -83,7 +83,7 @@ const main = () => {
     blocksToWrite = blocksToWrite.slice(blocksToPurge)
   }
 
-  // store blocks inside blocks array based on block height in descending order
+  // store blocks inside blocksToWrite array based on block height in descending order
   const storeTransactionData = (txData, txBlockHeight) => {
     if (txData.length === 0) {
       txData = [[txBlockHeight, 'COINBASETRANSACTIONONLY']]
