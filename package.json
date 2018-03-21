@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "description": "Scrape blockchains for desired attributes and export to a CSV file",
   "main": "main.js",
+  "bin": {
+    "blockscrape": "./main.js"
+  },
   "dependencies": {
     "eslint": "^4.19.0",
     "lru_map": "^0.3.3"
