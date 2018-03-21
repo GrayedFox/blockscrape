@@ -1,18 +1,96 @@
 # Blockscrape
 
-Scrape a blockchain for required information and export it to a CSV file.
+Scrapes a blockchain for required information and export it to a CSV file.
 
 * Fast (uses Node workers to get the job done in parallel)
-* Support for adding other blockchains down the line...
+* Support for adding other blockchains down the line
+
+### Installation
+
+***Prerequisites***
+
+* Requires Node Carbon (v8). I'd recommend installing using [Node Version Manager][2]
+
+* A local crypto blockchain node such as [Litecoin][3] or [Bitcoin][4]
+
+***Instructions***
+
+ 1. clone the repo into wherever you keep these things
+ 2. `cd` into blockscrape root directory
+ 3. `npm install` to get required packages
+ 4. `npm link` to get that fancy symlink (ooooh shiny!)
+
+Now before I tell you the magic command you need to know a few things...
+
+### Environment Variables And A Few things
+
+To take advantage of memoization the scraper goes ***in reverse***. No matter what two blocks you pass
+blockscrape will begin at the highest block and end at the lowest.
+
+The scraper does have some persistance although it's pretty basic: blockscrape saves the last written block to a file (`last-written-block`) and will begin from the next block down the chain, so you can safely restart it with, say, a
+cron job in case it dies.
+
+* BLOCKSCRAPECLI: the name of the cli interface of your local blockchain, i.e. `litecoin-cli` or `bitcoin-cli`
+* BLOCKSCRAPEFROM: the first block (inclusive) to scrape, if undefined attempt to read from `last-written-block` file
+* BLOCKSCRAPETO: the final block (inclusive) to scrape, if undefined defaults to `0`
+
+### Running Blockscrape
+
+Now that you know what the environment variables do you could, for example, scrape blocks 2000-3000 by doing:
+
+* `BLOCKSCRAPECLI=litecoin-cli BLOCKSCRAPEFROM=2000 BLOCKSCRAPETO=3000 blockscrape`
+
+Typing out those hefty environment variables every time would be tedious and I figure you want to do other things if
+scraping large amounts of data. In that case consider starting (and possibly restarting) blockscrape with a script like
+so:
+
+```
+# restartBlockscrape.sh
+
+#!/bin/bash
+source $HOME/.bashrc
+
+NODE="$(which node)"
+PROCESS="$NODE /home/grayedfox/github/blockscrape/main.js"
+LOGFILE="/tmp/log.out"
+
+export BLOCKSCRAPECLI="$(which litecoin-cli)"
+
+if pgrep -f "$PROCESS" > /dev/null; then
+  echo "Blockscrape is doing it's thing - moving on..." >> $LOGFILE
+else
+  echo "Blockscrape not running! Starting again..." >> $LOGFILE
+  echo "Process: $PROCESS" >> $LOGFILE
+  echo "Node: $NODE" >> $LOGFILE
+  $PROCESS >> $LOGFILE
+fi
+```
+
+Now to monitor progress you could `tail -f /tmp/log.out` if using the above example and watch the blocks roll by.
+
+You could then also make a cronjob using `crontab -e` (or your scheduler of choice) to execute that script every N minutes/hours/unicorns.
 
 ### Supported Blockchains
 
-* litecoin
+* Litecoin
+* Bitcoin (in theory, need to test)
+
+### Coming Soon
+
+* Ability to scrape remote nodes (such as [Blockcypher][5] or [Blockchain.info][6])
+* Benchmarks
+* Tests
 
 ### Contributing
 
-We'll figure this shit out later, but I can say it will be [GitFlow][1], each
-feature branch will require code reviews, and branches merging into develop
-should be squashed.
+Please follow the [GitFlow][1] branching model. Feature branches will require code reviews
+and branches merging into develop should be squashed. I have a linting style I like and I'd pefer you stick to it - Travis will fail PR's that don't conform (sorry!). Captain's orders. All else is up for discussion!
+
+Oh and feel free to report bugs, feedback, and the like - it's all much appreciated.
 
 [1]: http://nvie.com/posts/a-successful-git-branching-model/
+[2]: https://github.com/creationix/nvm
+[3]: https://litecoin.org
+[4]: https://bitcoin.org/en/
+[5]: https://live.blockcypher.com
+[6]: https://blockchain.info/api
