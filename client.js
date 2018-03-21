@@ -1,7 +1,7 @@
 const { spawn } = require('child_process')
 const { LRUMap } = require('lru_map')
 
-const blockchainCli = process.env.BLOCKSCRAPECLI || 'litecoin-cli'
+const blockchainCli = process.env.BLOCKSCRAPECLI
 
 let lruCache = new LRUMap(5000)
 
@@ -33,6 +33,11 @@ const cache = (args) => {
 }
 
 const client = (args) => {
+  if (blockchainCli === undefined) {
+    console.error('BLOCKCHAINCLI undefined! Enviroment variable required. Read the docs!')
+    process.exit(1)
+  }
+
   return new Promise( (resolve, reject) => {
     let result = ''
     let resultError = ''
