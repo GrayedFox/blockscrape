@@ -30,7 +30,6 @@ const getInfo = () => {
 
 const getRawTransaction = async (txHash, verbose = true) => {
   const result = await client([blockchain.getRawTransaction, txHash, verbose])
-  cache(['set', txHash, JSON.parse(result).vout])
   return result
 }
 
