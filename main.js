@@ -10,8 +10,8 @@ const cores = os.cpus()
 const lastWrittenBlockFile = `${path.resolve(__dirname)}/last-written-block`
 const csvFile = `${path.resolve(__dirname)}/exportedData.csv`
 
-const blockEnd = process.env.BLOCKSCRAPEEND || 0
-let blockBegin = process.env.BLOCKSCRAPEBEGIN
+let blockBegin = process.env.BLOCKSCRAPEFROM
+let blockEnd = process.env.BLOCKSCRAPETO || 1349900
 
 let blocksToWrite = []
 let firstBlock = true
@@ -123,6 +123,10 @@ const main = () => {
   if (cluster.isMaster) {
     if (blockBegin === undefined) {
       blockBegin = (lastWrittenBlockFromFile() - 1)
+    }
+
+    if (blockBegin < blockEnd) {
+      blockBegin = blockEnd + (blockEnd = blockBegin, 0)
     }
 
     blockHeight = blockBegin
