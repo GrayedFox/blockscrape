@@ -14,8 +14,9 @@ const scraper = async (blockHeight) => {
 
     let txAmount = globals.getTransactionTotal(tx.vout)
     let fee = await globals.calculateFee(tx, txAmount)
+    let txTime = new Date(tx.time * 1000)
 
-    blockTransactionData.push([blockHeight, txAmount, fee, tx.time, tx.txid])
+    blockTransactionData.push([blockHeight, txAmount, fee, txTime, tx.txid])
   }
 
   console.log(`Block ${blockHeight} done after processing ${transactions.length - 1} transactions!`)
