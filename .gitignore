@@ -60,8 +60,10 @@ typings/
 # tern project config
 .tern-project
 
-# exported csv files
+# exported csv and other files
 *.csv
+*.heapsnapshot
+last-written-block
 
-# ignore local debug file used for testing
+# local debug file
 debug.js

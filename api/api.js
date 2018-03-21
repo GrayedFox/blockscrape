@@ -1,9 +1,9 @@
-const { client, blockchainCli } = require('../client.js')
-const litecoin = require('./litecoin_api')
+const { cache, client, blockchainCli } = require('../client.js')
+const litecoin = require('./litecoin-api')
 
 let blockchain = undefined
 
-if (blockchainCli === 'litecoin-cli' || blockchainCli === 'bitcoin-cli') {
+if (blockchainCli.endsWith('litecoin-cli') || blockchainCli.endsWith('bitcoin-cli')) {
   blockchain = litecoin
 }
 
@@ -23,8 +23,24 @@ const getInfo = () => {
   return client([blockchain.getInfo])
 }
 
-const getRawTransaction = (txHash, verbose = true) => {
-  return client([blockchain.getRawTransaction, txHash, verbose])
+const getRawTransaction = async (txHash, verbose = true) => {
+  const result = await client([blockchain.getRawTransaction, txHash, verbose])
+  cache(['set', txHash, JSON.parse(result).vout])
+  return result
+}
+
+const getRawTransactionVout = async (txHash, verbose = true) => {
+  let vOutArray = undefined
+
+  if (await cache(['exists', txHash])) {
+    vOutArray = await cache(['get', txHash])
+  } else {
+    const result = await client([blockchain.getRawTransaction, txHash, verbose])
+    vOutArray = JSON.parse(result).vout
+    cache(['set', txHash, vOutArray])
+  }
+
+  return vOutArray
 }
 
 module.exports = {
@@ -32,5 +48,6 @@ module.exports = {
   getBlock,
   getBlockHashByHeight,
   getInfo,
-  getRawTransaction
+  getRawTransaction,
+  getRawTransactionVout
 }
