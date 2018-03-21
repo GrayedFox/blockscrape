@@ -33,11 +33,6 @@ const cache = (args) => {
 }
 
 const client = (args) => {
-  if (blockchainCli === undefined) {
-    console.error('BLOCKCHAINCLI undefined! Enviroment variable required. Read the docs!')
-    process.exit(1)
-  }
-
   return new Promise( (resolve, reject) => {
     let result = ''
     let resultError = ''
