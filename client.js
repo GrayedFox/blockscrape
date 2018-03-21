@@ -1,7 +1,7 @@
 const { spawn } = require('child_process')
 const { LRUMap } = require('lru_map')
 
-const blockchainCli = process.env.BLOCKSCRAPECLI || 'litecoin-cli'
+const blockchainCli = process.env.BLOCKSCRAPECLI
 
 let lruCache = new LRUMap(5000)
 

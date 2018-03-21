@@ -3,6 +3,11 @@ const litecoin = require('./litecoin-api')
 
 let blockchain = undefined
 
+if (blockchainCli === undefined) {
+  console.error('BLOCKCHAINCLI undefined! Enviroment variable required. Read the docs!')
+  process.exit(1)
+}
+
 if (blockchainCli.endsWith('litecoin-cli') || blockchainCli.endsWith('bitcoin-cli')) {
   blockchain = litecoin
 }
@@ -25,7 +30,6 @@ const getInfo = () => {
 
 const getRawTransaction = async (txHash, verbose = true) => {
   const result = await client([blockchain.getRawTransaction, txHash, verbose])
-  cache(['set', txHash, JSON.parse(result).vout])
   return result
 }
 
