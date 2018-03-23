@@ -30,6 +30,7 @@ blockscrape will begin at the highest block and end at the lowest.
 The scraper does have some persistance although it's pretty basic: blockscrape saves the last written block to a file (`last-written-block`) and will begin from the next block down the chain, so you can safely restart it with, say, a
 cron job in case it dies.
 
+* BLOCKSCRAPECACHESIZE: max transactions able to be stored in the LRU cache (defaults to `100000`)
 * BLOCKSCRAPECLI: the name of the cli interface of your local blockchain, i.e. `litecoin-cli` or `bitcoin-cli`
 * BLOCKSCRAPEFROM: the first block (inclusive) to scrape, if undefined attempt to read from `last-written-block` file
 * BLOCKSCRAPETO: the final block (inclusive) to scrape, if undefined defaults to `0`
@@ -44,7 +45,7 @@ Typing out those hefty environment variables every time would be tedious and I f
 scraping large amounts of data. In that case consider starting (and possibly restarting) blockscrape with a script like
 so:
 
-```
+```bash
 # restartBlockscrape.sh
 
 #!/bin/bash
