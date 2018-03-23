@@ -19,8 +19,6 @@ const scraper = async (blockHeight) => {
     blockTransactionData.push([blockHeight, txAmount, fee, txTime, tx.txid])
   }
 
-  console.log(`Block ${blockHeight} done after processing ${transactions.length - 1} transactions!`)
-
   return({ msg: 'blockDone', data: blockTransactionData, block: blockHeight, txTotal: transactions.length - 1 })
 }
 
