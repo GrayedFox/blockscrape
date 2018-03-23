@@ -11,7 +11,7 @@ const lastWrittenBlockFile = `${path.resolve(__dirname)}/last-written-block`
 const csvFile = `${path.resolve(__dirname)}/exportedData.csv`
 
 let blockBegin = process.env.BLOCKSCRAPEFROM
-let blockEnd = process.env.BLOCKSCRAPETO || 1349900
+let blockEnd = process.env.BLOCKSCRAPETO || 0
 
 let blocksToWrite = []
 let firstBlock = true
