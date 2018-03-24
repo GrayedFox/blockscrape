@@ -60,10 +60,9 @@ typings/
 # tern project config
 .tern-project
 
-# exported csv and other files
+# exported csv and other dump files
 *.csv
 *.heapsnapshot
-last-written-block
 
 # local debug file
 debug.js

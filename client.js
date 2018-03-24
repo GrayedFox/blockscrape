@@ -1,9 +1,10 @@
 const { spawn } = require('child_process')
 const { LRUMap } = require('lru_map')
 
-const blockchainCli = process.env.BLOCKSCRAPECLI
+const blockchainCli = process.env.BLOCKSCRAPECLI || 'bitcoin-cli'
+const cacheSize = process.env.BLOCKSCRAPECACHESIZE || 100000
 
-let lruCache = new LRUMap(5000)
+let txVoutCache = new LRUMap(cacheSize)
 
 // args should be an array structured like [operation, key, value]
 const cache = (args) => {
@@ -12,17 +13,17 @@ const cache = (args) => {
 
     switch (args[0]) {
       case 'get':
-        result = lruCache.get(args[1])
+        result = txVoutCache.get(args[1])
         resolve(result)
         break
 
       case 'set':
-        result = lruCache.set(args[1], args[2])
+        result = txVoutCache.set(args[1], args[2])
         resolve(result)
         break
 
       case 'exists':
-        result = lruCache.has(args[1])
+        result = txVoutCache.has(args[1])
         resolve(result)
         break
 
