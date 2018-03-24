@@ -31,7 +31,7 @@ The scraper does have some persistance although it's pretty basic: blockscrape s
 cron job in case it dies.
 
 * BLOCKSCRAPECACHESIZE: max transactions able to be stored in the LRU cache (defaults to `100000`)
-* BLOCKSCRAPECLI: the name of the cli interface of your local blockchain, i.e. `litecoin-cli` or `bitcoin-cli`
+* BLOCKSCRAPECLI: the name of the cli interface of your local blockchain, in undefined defaults to `bitcoin-cli`
 * BLOCKSCRAPEFROM: the first block (inclusive) to scrape, if undefined attempt to read from `last-written-block` file
 * BLOCKSCRAPETO: the final block (inclusive) to scrape, if undefined defaults to `0`
 

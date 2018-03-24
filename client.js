@@ -1,7 +1,7 @@
 const { spawn } = require('child_process')
 const { LRUMap } = require('lru_map')
 
-const blockchainCli = process.env.BLOCKSCRAPECLI
+const blockchainCli = process.env.BLOCKSCRAPECLI || 'bitcoin-cli'
 const cacheSize = process.env.BLOCKSCRAPECACHESIZE || 100000
 
 let txVoutCache = new LRUMap(cacheSize)
