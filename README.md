@@ -36,7 +36,8 @@ blockscrape will begin at the highest block and end at the lowest.
 The scraper does have some persistance although it's pretty basic: blockscrape saves the last written block to a file (`last-written-block`) and will begin from the next block down the chain, so you can safely restart it with, say, a
 cron job in case it dies.
 
-The data dumps are saved in the (you guessed it!) dumps folder which
+The data dumps are saved in the (you guessed it!) dumps folder and reference the first and final (last written) blocks
+in the data dump, for example `blocks-109330-109300.csv`.
 
 * BLOCKSCRAPECACHESIZE: max transactions able to be stored in the LRU cache (defaults to `100000`)
 * BLOCKSCRAPECLI: the name of the cli interface of your local blockchain, in undefined defaults to `bitcoin-cli`
