@@ -64,5 +64,8 @@ typings/
 *.csv
 *.heapsnapshot
 
+# ignore restart blockscrape script
+restartBlockscrape.sh
+
 # local debug file
 debug.js

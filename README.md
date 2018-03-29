@@ -19,6 +19,12 @@ Scrapes a blockchain for required information and export it to a CSV file.
  2. `cd` into blockscrape root directory
  3. `npm install` to get required packages
  4. `npm link` to get that fancy symlink (ooooh shiny!)
+ 5. `git update-index --skip-worktree ./storage/last-written-block.save`
+ 6. `git update-index --skip-worktree ./storage/failed-blocks.save`
+
+This will clone the repo, install required packages, create a blockscrape binary, and tell git to ignore any
+changes inside the `last-written-block` and `failed-blocks` files so you can develop/scrape at will without your IDE
+or git annoying you about changes we don't want inside version control anyway.
 
 Now before I tell you the magic command you need to know a few things...
 
@@ -30,20 +36,28 @@ blockscrape will begin at the highest block and end at the lowest.
 The scraper does have some persistance although it's pretty basic: blockscrape saves the last written block to a file (`last-written-block`) and will begin from the next block down the chain, so you can safely restart it with, say, a
 cron job in case it dies.
 
+The data dumps are saved in the (you guessed it!) dumps folder which
+
 * BLOCKSCRAPECACHESIZE: max transactions able to be stored in the LRU cache (defaults to `100000`)
 * BLOCKSCRAPECLI: the name of the cli interface of your local blockchain, in undefined defaults to `bitcoin-cli`
 * BLOCKSCRAPEFROM: the first block (inclusive) to scrape, if undefined attempt to read from `last-written-block` file
 * BLOCKSCRAPETO: the final block (inclusive) to scrape, if undefined defaults to `0`
+* BLOCKSCRAPELIMIT: the maximum amount of blocks to write before shutting the process down, defaults to `0`
+
+> NOTE: The BLOCKSCRAPELIMIT defaults to 0 but will be set at runtime to the difference between BLOCKSCRAPEFROM and
+BLOCKSCRAPETO so it can be safely left alone. Setting a limit is useful if, say, you want blockscrape to shutdown
+after N blocks or if you want to have multiple data dumps of N blocks instead of one giant data dump
 
 ### Running Blockscrape
 
-Now that you know what the environment variables do you could, for example, scrape blocks 2000-3000 by doing:
+Now that you know what the environment variables do you could, for example, scrape block 30000 to block 10 by doing:
 
-* `BLOCKSCRAPECLI=litecoin-cli BLOCKSCRAPEFROM=2000 BLOCKSCRAPETO=3000 blockscrape`
+* `BLOCKSCRAPECLI=litecoin-cli BLOCKSCRAPEFROM=30000 BLOCKSCRAPETO=10 blockscrape`
 
-Typing out those hefty environment variables every time would be tedious and I figure you want to do other things if
-scraping large amounts of data. In that case consider starting (and possibly restarting) blockscrape with a script like
-so:
+Typing out those hefty environment variables every time would be tedious and I figure you probably don't want to sit
+around staring at your screen to ensure the blockscrape is alive and well while scraping large amounts of data.
+
+In that case consider starting (and potentially restarting) blockscrape with a script like so:
 
 ```bash
 # restartBlockscrape.sh
@@ -69,7 +83,7 @@ fi
 
 Now to monitor progress you could `tail -f /tmp/log.out` if using the above example and watch the blocks roll by.
 
-You could then also make a cronjob using `crontab -e` (or your scheduler of choice) to execute that script every N minutes/hours/unicorns.
+You could also turn this into a cronjob using `crontab -e` (or your scheduler of choice) to execute that script every N minutes/hours/unicorns.
 
 ### Supported Blockchains
 
@@ -78,6 +92,7 @@ You could then also make a cronjob using `crontab -e` (or your scheduler of choi
 
 ### Coming Soon
 
+* Ability to specify which attributes you want (currently dumps txid, blockheight, time, tx amount, and fee)
 * Ability to scrape remote nodes (such as [Blockcypher][5] or [Blockchain.info][6])
 * Benchmarks
 * Tests
@@ -85,7 +100,8 @@ You could then also make a cronjob using `crontab -e` (or your scheduler of choi
 ### Contributing
 
 Please follow the [GitFlow][1] branching model. Feature branches will require code reviews
-and branches merging into develop should be squashed. I have a linting style I like and I'd pefer you stick to it - Travis will fail PR's that don't conform (sorry!). Captain's orders. All else is up for discussion!
+and branches merging into develop should be squashed. I have a linting style I like and I'd pefer you stick to it -
+Travis will fail PR's that don't conform (sorry!). Captain's orders. All else is up for discussion!
 
 Oh and feel free to report bugs, feedback, and the like - it's all much appreciated.
 

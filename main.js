@@ -14,6 +14,7 @@ const csvSaveLocation = `${path.resolve(__dirname)}/dumps/`
 
 let blockBegin = process.env.BLOCKSCRAPEFROM
 let blockEnd = process.env.BLOCKSCRAPETO || 0
+let blockLimit = process.env.BLOCKSCRAPELIMIT || 0
 
 let blocksToWrite = []
 let orphanedBlocks = []
@@ -25,6 +26,7 @@ let blockHeight = undefined
 let lastProcessedBlock = undefined
 let csvWriteStream = undefined
 let totalWorkers = 0
+let totalBlocksScraped = 0
 
 const openCsvWriteStream = () => { csvWriteStream = fs.createWriteStream(csvFile, { flags: 'a' }) }
 
@@ -125,12 +127,13 @@ const blockHandler = (worker) => {
     blocksBeingScraped[worker.process.pid] = orphanedBlockHeight
     worker.send( { cmd: 'nextBlock', nextBlock: orphanedBlockHeight })
   } else {
-    if (blockHeight > blockEnd) {
+    if (blockHeight > blockEnd && totalBlocksScraped <= blockLimit) {
       blockHeight -= 1
+      totalBlocksScraped += 1
       blocksBeingScraped[worker.process.pid] = blockHeight
       worker.send({ cmd: 'nextBlock', nextBlock: blockHeight })
     } else {
-      console.log('No more blocks to scrape! Shutting worker down...')
+      console.log('Block limit reach or no more blocks to scrape! Shutting worker down...')
       worker.kill('SIGTERM')
     }
   }
@@ -183,11 +186,16 @@ const main = () => {
       blockBegin = blockEnd + (blockEnd = blockBegin, 0)
     }
 
+    if (blockLimit === 0) {
+      blockLimit = blockBegin - blockEnd
+    }
+
     blockHeight = blockBegin
 
     console.log(`Master process ${process.pid} is running`)
     console.log(`Starting block set to: ${blockBegin}`)
     console.log(`Final block set to: ${blockEnd}`)
+    console.log(`Block limit set to ${blockLimit}`)
 
     openCsvWriteStream()
 
@@ -210,6 +218,7 @@ const main = () => {
             firstBlock = false
             blocksBeingScraped[message.pid] = blockHeight
             worker.send({ cmd: 'nextBlock', nextBlock: blockHeight })
+            totalBlocksScraped += 1
           } else {
             blockHandler(worker)
           }
