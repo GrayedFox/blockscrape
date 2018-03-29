@@ -10,9 +10,11 @@ const cores = os.cpus()
 const csvFile = `${path.resolve(__dirname)}/exportedData.csv`
 const lastWrittenBlockFile = `${path.resolve(__dirname)}/storage/last-written-block.save`
 const failedBlocksFile = `${path.resolve(__dirname)}/storage/failed-blocks.save`
+const csvSaveLocation = `${path.resolve(__dirname)}/dumps/`
 
 let blockBegin = process.env.BLOCKSCRAPEFROM
 let blockEnd = process.env.BLOCKSCRAPETO || 0
+let blockLimit = process.env.BLOCKSCRAPELIMIT || 0
 
 let blocksToWrite = []
 let orphanedBlocks = []
@@ -23,16 +25,20 @@ let blockFailCheck = true
 let blockHeight = undefined
 let lastProcessedBlock = undefined
 let csvWriteStream = undefined
+let totalWorkers = 0
+let totalBlocksScraped = 0
 
 const openCsvWriteStream = () => { csvWriteStream = fs.createWriteStream(csvFile, { flags: 'a' }) }
 
-const lastWrittenBlockFromFile = () => fs.readFileSync(lastWrittenBlockFile, { encoding: 'utf8' })
+const readLastWrittenBlockFromFile = () => fs.readFileSync(lastWrittenBlockFile, { encoding: 'utf8' })
 
 const readFailedBlocksFromFile = () => fs.readFileSync(failedBlocksFile, { encoding: 'utf8' })
 
 const writeFailedBlockToFile = (block) => fs.writeFileSync(failedBlocksFile, block, { flags: 'a' })
 
 const clearFailedBlocksFile = () => fs.truncateSync(failedBlocksFile)
+
+const saveExportedData = (name) => fs.renameSync(csvFile, `${csvSaveLocation}${name}`)
 
 const scrapeNextBlock = (block) => {
   return new Promise( (resolve, reject) => {
@@ -121,13 +127,14 @@ const blockHandler = (worker) => {
     blocksBeingScraped[worker.process.pid] = orphanedBlockHeight
     worker.send( { cmd: 'nextBlock', nextBlock: orphanedBlockHeight })
   } else {
-    if (blockHeight > blockEnd) {
+    if (blockHeight > blockEnd && totalBlocksScraped <= blockLimit) {
       blockHeight -= 1
+      totalBlocksScraped += 1
       blocksBeingScraped[worker.process.pid] = blockHeight
       worker.send({ cmd: 'nextBlock', nextBlock: blockHeight })
     } else {
-      console.log('No more blocks to scrape! Shutting worker down...')
-      worker.kill(0)
+      console.log('Block limit reach or no more blocks to scrape! Shutting worker down...')
+      worker.kill('SIGTERM')
     }
   }
 }
@@ -172,11 +179,15 @@ const storeTransactionData = (txData, txBlockHeight) => {
 const main = () => {
   if (cluster.isMaster) {
     if (blockBegin === undefined) {
-      blockBegin = (lastWrittenBlockFromFile() - 1)
+      blockBegin = (readLastWrittenBlockFromFile() - 1)
     }
 
     if (blockBegin < blockEnd) {
       blockBegin = blockEnd + (blockEnd = blockBegin, 0)
+    }
+
+    if (blockLimit === 0) {
+      blockLimit = blockBegin - blockEnd
     }
 
     blockHeight = blockBegin
@@ -184,11 +195,13 @@ const main = () => {
     console.log(`Master process ${process.pid} is running`)
     console.log(`Starting block set to: ${blockBegin}`)
     console.log(`Final block set to: ${blockEnd}`)
+    console.log(`Block limit set to ${blockLimit}`)
 
     openCsvWriteStream()
 
     for (let i = 0; i < cores.length; i++) {
       cluster.fork()
+      totalWorkers += 1
     }
 
     cluster.on('message', (worker, message) => {
@@ -205,6 +218,7 @@ const main = () => {
             firstBlock = false
             blocksBeingScraped[message.pid] = blockHeight
             worker.send({ cmd: 'nextBlock', nextBlock: blockHeight })
+            totalBlocksScraped += 1
           } else {
             blockHandler(worker)
           }
@@ -216,12 +230,13 @@ const main = () => {
 
         default:
           console.error(`Unexpected message: ${JSON.stringify(message)}, shutting down worker with exit code 1`)
-          worker.kill(1)
+          worker.kill('SIGKILL')
       }
     })
 
     cluster.on('exit', (worker, code, signal) => {
-      if (code !== 0) {
+      totalWorkers -= 1
+      if (signal !== 'SIGTERM') {
         console.error(`Worker ${worker.process.pid} died with code ${code} and signal ${signal}`)
         writeFailedBlockToFile(`${blocksBeingScraped[worker.process.pid]}\n`)
         blockFailCheck = true
@@ -229,6 +244,13 @@ const main = () => {
         delete (blocksBeingScraped[worker.process.pid])
         console.error(`Deleted worker pid ${worker.process.pid} from blocksBeingScraped object`)
         cluster.fork()
+        totalWorkers += 1
+      } else {
+        if (totalWorkers === 0) {
+          console.log('Job done, saving data to dumps folder and closing write stream...')
+          csvWriteStream.end()
+          saveExportedData(`blocks-${blockBegin}-${readLastWrittenBlockFromFile()}.csv`)
+        }
       }
     })
   } else {
