@@ -57,3 +57,15 @@ typings/
 # dotenv environment variables file
 .env
 
+# tern project config
+.tern-project
+
+# exported csv and other dump files
+*.csv
+*.heapsnapshot
+
+# ignore restart blockscrape script
+restartBlockscrape.sh
+
+# local debug file
+debug.js
