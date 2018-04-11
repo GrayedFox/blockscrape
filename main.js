@@ -14,7 +14,7 @@ const csvSaveLocation = `${path.resolve(__dirname)}/dumps/`
 
 let blockBegin = process.env.BLOCKSCRAPEFROM
 let blockEnd = process.env.BLOCKSCRAPETO || 0
-let blockLimit = process.env.BLOCKSCRAPELIMIT || 0
+let blockLimit = process.env.BLOCKSCRAPELIMIT
 
 let blocksToWrite = []
 let orphanedBlocks = []
@@ -134,7 +134,7 @@ const blockHandler = (worker) => {
       worker.send({ cmd: 'nextBlock', nextBlock: blockHeight })
     } else {
       console.log('Block limit reach or no more blocks to scrape! Shutting worker down...')
-      worker.kill('SIGTERM')
+      worker.kill('SIGQUIT')
     }
   }
 }
@@ -177,8 +177,15 @@ const storeTransactionData = (txData, txBlockHeight) => {
 }
 
 const main = () => {
-  if (cluster.isMaster) {
-    if (blockBegin === undefined) {
+  const forkWorkers = (amount) => {
+    for (let i = 0; i < amount; i++) {
+      cluster.fork()
+      totalWorkers += 1
+    }
+  }
+
+  const setUp = (reboot = false) => {
+    if (blockBegin === undefined || reboot === true) {
       blockBegin = (readLastWrittenBlockFromFile() - 1)
     }
 
@@ -190,19 +197,22 @@ const main = () => {
       blockLimit = blockBegin - blockEnd
     }
 
+    totalBlocksScraped = 0
+    firstBlock = true
     blockHeight = blockBegin
 
-    console.log(`Master process ${process.pid} is running`)
-    console.log(`Starting block set to: ${blockBegin}`)
+    openCsvWriteStream()
+    forkWorkers(cores.length)
+
+    console.log(`First block set to: ${blockBegin}`)
     console.log(`Final block set to: ${blockEnd}`)
     console.log(`Block limit set to ${blockLimit}`)
+  }
 
-    openCsvWriteStream()
+  if (cluster.isMaster) {
+    console.log(`Master process ${process.pid} is running`)
 
-    for (let i = 0; i < cores.length; i++) {
-      cluster.fork()
-      totalWorkers += 1
-    }
+    setUp()
 
     cluster.on('message', (worker, message) => {
       if (message.data) {
@@ -236,7 +246,7 @@ const main = () => {
 
     cluster.on('exit', (worker, code, signal) => {
       totalWorkers -= 1
-      if (signal !== 'SIGTERM') {
+      if (signal !== 'SIGQUIT') {
         console.error(`Worker ${worker.process.pid} died with code ${code} and signal ${signal}`)
         writeFailedBlockToFile(`${blocksBeingScraped[worker.process.pid]}\n`)
         blockFailCheck = true
@@ -250,6 +260,9 @@ const main = () => {
           console.log('Job done, saving data to dumps folder and closing write stream...')
           csvWriteStream.end()
           saveExportedData(`blocks-${blockBegin}-${readLastWrittenBlockFromFile()}.csv`)
+          if (blockHeight > blockEnd) {
+            setUp(true)
+          }
         }
       }
     })
