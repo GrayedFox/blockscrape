@@ -14,7 +14,7 @@ const csvSaveLocation = `${path.resolve(__dirname)}/dumps/`
 
 let blockBegin = process.env.BLOCKSCRAPEFROM
 let blockEnd = process.env.BLOCKSCRAPETO || 0
-let blockLimit = process.env.BLOCKSCRAPELIMIT || 100000
+let blockLimit = process.env.BLOCKSCRAPELIMIT
 
 let blocksToWrite = []
 let orphanedBlocks = []
