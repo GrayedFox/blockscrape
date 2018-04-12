@@ -14,7 +14,7 @@ const csvSaveLocation = `${path.resolve(__dirname)}/dumps/`
 
 let blockBegin = process.env.BLOCKSCRAPEFROM
 let blockEnd = process.env.BLOCKSCRAPETO || 0
-let blockLimit = process.env.BLOCKSCRAPELIMIT
+let blockLimit = process.env.BLOCKSCRAPELIMIT || 0
 
 let blocksToWrite = []
 let orphanedBlocks = []
@@ -266,6 +266,12 @@ const main = () => {
         }
       }
     })
+
+    process.on('SIGINT', () => {
+      console.warn('Caught interrupt! Telling scraper to finish job after next block...')
+      blockEnd = blockHeight + 1
+    })
+
   } else {
     console.log(`Worker ${process.pid} started...`)
 
