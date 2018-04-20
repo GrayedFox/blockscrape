@@ -14,7 +14,7 @@ const csvSaveLocation = `${path.resolve(__dirname)}/dumps/`
 
 let blockBegin = process.env.BLOCKSCRAPEFROM
 let blockEnd = process.env.BLOCKSCRAPETO || 0
-let blockLimit = process.env.BLOCKSCRAPELIMIT || 0
+let blockLimit = process.env.BLOCKSCRAPELIMIT || 10000
 
 let blocksToWrite = []
 let orphanedBlocks = []
@@ -36,7 +36,7 @@ const readFailedBlocksFromFile = () => fs.readFileSync(failedBlocksFile, { encod
 
 const writeFailedBlockToFile = (block) => fs.writeFileSync(failedBlocksFile, block, { flags: 'a' })
 
-const clearFailedBlocksFile = () => fs.truncateSync(failedBlocksFile)
+const deleteFailedBlocksFile = () => fs.unlinkSync(failedBlocksFile)
 
 const saveExportedData = (name) => fs.renameSync(csvFile, `${csvSaveLocation}${name}`)
 
@@ -81,21 +81,19 @@ const writeToCsvFile = (txData) => {
 const checkForFailedBlocks = () => {
   if (blockFailCheck === true) {
     blockFailCheck = false
-    console.log('Checking failed blocks!')
-    failedBlocks = readFailedBlocksFromFile().split('\n')
-    for (let i = 0; i < failedBlocks.length; i++) {
-      // reading a file with empty lines results in populating an array with elements containing a blank string only,
-      // which we want to ignore by checking the length of each element, which we must do before converting the string
-      // to a number since unary + conversion will change empty strings to 0 (which has a length gt 1)
-      if (failedBlocks[i].length > 0) {
+    console.log('Checking for failed blocks!')
+    if (fs.existsSync(failedBlocksFile)) {
+      failedBlocks = readFailedBlocksFromFile().split('\n')
+      for (let i = 0; i < failedBlocks.length; i++) {
         let failedBlockHeight = +failedBlocks[i]
+        // don't add duplicate blocks to orphanedBlock array
         if (orphanedBlocks.indexOf(failedBlockHeight) === -1) {
           orphanedBlocks.push(failedBlockHeight)
         }
       }
+      failedBlocks = []
+      deleteFailedBlocksFile()
     }
-    failedBlocks = []
-    clearFailedBlocksFile()
   }
 }
 
@@ -186,15 +184,16 @@ const main = () => {
 
   const setUp = (reboot = false) => {
     if (blockBegin === undefined || reboot === true) {
-      blockBegin = (readLastWrittenBlockFromFile() - 1)
+      if (fs.existsSync(lastWrittenBlockFile)) {
+        blockBegin = (readLastWrittenBlockFromFile() - 1)
+      } else {
+        console.error('BLOCKSCRAPEFROM undefined and cannot read last written block from disk! Read the docs!')
+        process.exit(1)
+      }
     }
 
     if (blockBegin < blockEnd) {
       blockBegin = blockEnd + (blockEnd = blockBegin, 0)
-    }
-
-    if (blockLimit === 0) {
-      blockLimit = blockBegin - blockEnd
     }
 
     totalBlocksScraped = 0
