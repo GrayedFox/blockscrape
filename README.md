@@ -19,12 +19,8 @@ Scrapes a blockchain for required information and export it to a CSV file.
  2. `cd` into blockscrape root directory
  3. `npm install` to get required packages
  4. `npm link` to get that fancy symlink (ooooh shiny!)
- 5. `git update-index --skip-worktree ./storage/last-written-block.save`
- 6. `git update-index --skip-worktree ./storage/failed-blocks.save`
 
-This will clone the repo, install required packages, create a blockscrape binary, and tell git to ignore any
-changes inside the `last-written-block` and `failed-blocks` files so you can develop/scrape at will without your IDE
-or git annoying you about changes we don't want inside version control anyway.
+This will clone the repo, install required packages, and create a blockscrape binary.
 
 Now before I tell you the magic command you need to know a few things...
 
@@ -33,8 +29,11 @@ Now before I tell you the magic command you need to know a few things...
 To take advantage of memoization the scraper goes ***in reverse***. No matter what two blocks you pass
 blockscrape will begin at the highest block and end at the lowest.
 
-The scraper does have some persistance although it's pretty basic: blockscrape saves the last written block to a file (`last-written-block`) and will begin from the next block down the chain, so you can safely restart it with, say, a
-cron job in case it dies.
+The scraper does have some persistance although it's pretty basic: blockscrape saves the last written block to a file (`last-written-block.save`) and will begin from the next block down the chain, so you can safely restart it with, say, a
+cron job in case the master process dies.
+
+The save files (you might also notice a `failed-blocks.save` appear in case a worker dies while scraping) are ignored
+by Git and thus shouldn't be checked into version control.
 
 The data dumps are saved in the (you guessed it!) dumps folder and reference the first and final (last written) blocks
 in the data dump, for example `blocks-109330-109300.csv`.
