@@ -3,11 +3,6 @@ const litecoin = require('./litecoin-api')
 
 let blockchain = undefined
 
-if (blockchainCli === undefined) {
-  console.error('BLOCKSCRAPECLI undefined! Enviroment variable required. Read the docs!')
-  process.exit(1)
-}
-
 if (blockchainCli.endsWith('litecoin-cli') || blockchainCli.endsWith('bitcoin-cli')) {
   blockchain = litecoin
 }
