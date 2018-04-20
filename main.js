@@ -14,7 +14,7 @@ const csvSaveLocation = `${path.resolve(__dirname)}/dumps/`
 
 let blockBegin = process.env.BLOCKSCRAPEFROM
 let blockEnd = process.env.BLOCKSCRAPETO || 0
-let blockLimit = process.env.BLOCKSCRAPELIMIT || 0
+let blockLimit = process.env.BLOCKSCRAPELIMIT || 10000
 
 let blocksToWrite = []
 let orphanedBlocks = []
@@ -194,10 +194,6 @@ const main = () => {
 
     if (blockBegin < blockEnd) {
       blockBegin = blockEnd + (blockEnd = blockBegin, 0)
-    }
-
-    if (blockLimit === 0) {
-      blockLimit = blockBegin - blockEnd
     }
 
     totalBlocksScraped = 0
