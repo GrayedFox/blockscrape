@@ -1,5 +1,5 @@
 const { cache, client, blockchainCli } = require('../client.js')
-const litecoin = require('./litecoin-api')
+const litecoin = require('./litecoin')
 
 let blockchain = undefined
 
