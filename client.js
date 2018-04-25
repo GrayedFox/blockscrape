@@ -1,6 +1,8 @@
+const https = require('https')
 const { spawn } = require('child_process')
 const { LRUMap } = require('lru_map')
 
+const blockchainApi = process.env.BLOCKSCRAPEAPI
 const blockchainCli = process.env.BLOCKSCRAPECLI || 'litecoin-cli'
 const cacheSize = process.env.BLOCKSCRAPECACHESIZE || 100000
 
@@ -33,30 +35,36 @@ const cache = (args) => {
   })
 }
 
-const client = (args) => {
+const local = (command) => {
   return new Promise( (resolve, reject) => {
     let result = ''
     let resultError = ''
-    let child = spawn(`${blockchainCli} ${args.join(' ')}`, {
-      shell: '/bin/bash'
-    })
+    let child = spawn(command, { shell: '/bin/bash' })
 
     child.stderr.setEncoding('utf8')
     child.stdout.setEncoding('utf8')
 
+    child.stdout.on('data', (chunk) => {
+      result += chunk
+    })
+
+    child.stderr.on('data', (chunk) => {
+      resultError += chunk
+    })
+
     child.on('error', (err) => {
-      console.error(`errored with: ${err}`)
+      console.error(`Errored with: ${err}!`)
     })
 
     child.on('exit', (code, signal) => {
       if (code !== 0 || signal !== null) {
-        console.warn(`exited with code ${code} and signal: ${signal}`)
+        console.warn(`Exited with code ${code} and signal: ${signal}`)
       }
     })
 
     child.on('close', (reason) => {
       if (reason !== 0) {
-        console.warn(`closed for reason: ${reason}`)
+        console.warn(`Closed for reason: ${reason}`)
         reject(resultError)
       } else {
         resolve(result)
@@ -64,21 +72,42 @@ const client = (args) => {
     })
 
     child.on('message', (message) => {
-      console.log(`message recieved: ${message}`)
-    })
-
-    child.stdout.on('data', (data) => {
-      result += data
-    })
-
-    child.stderr.on('data', (data) => {
-      resultError += data
+      console.log(`Message recieved: ${message}`)
     })
   })
+}
+
+const remote = (request) => {
+  return new Promise( (resolve, reject) => {
+    https.get(request, (response) => {
+      let data = ''
+
+      response.setEncoding('utf8')
+
+      response.on('data', (chunk) => {
+        data += chunk
+      })
+
+      response.on('end', () => {
+        resolve(JSON.parse(data))
+      })
+    }).on('error', (err) => {
+      reject(err)
+    })
+  })
+}
+
+const client = (args) => {
+  if (blockchainApi) {
+    remote(`${args.join('')}`) //ToDo: will need to add logic here to process url params (?begin,var=value,&add)
+  } else {
+    local(`${blockchainCli} ${args.join(' ')}`)
+  }
 }
 
 module.exports = {
   cache,
   client,
+  blockchainApi,
   blockchainCli
 }

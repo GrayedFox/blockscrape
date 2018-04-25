@@ -1,10 +1,16 @@
-const { cache, client, blockchainCli } = require('../client.js')
-const litecoin = require('./litecoin')
+const { cache, client, blockchainCli, blockchainApi } = require('../client.js')
+const litecoin = require('./litecoin.js')
+const blockcypher = require('./blockcypher.js')
 
 let blockchain = undefined
 
 if (blockchainCli.endsWith('litecoin-cli') || blockchainCli.endsWith('bitcoin-cli')) {
   blockchain = litecoin
+}
+
+// if both api and cli are defined api is given preference
+if (blockchainApi === 'blockcyper') {
+  blockchain = blockcypher
 }
 
 const decodeRawTransaction = (txHash) => {
