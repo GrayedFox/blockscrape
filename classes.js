@@ -3,7 +3,16 @@
 **/
 
 // careful when converting - this assumes a standard Satoshi ratio (i.e. 1 BTC = 100,000,000 Satoshis)
-const convertToSatoshis = (value) => Math.round(1e8 * value)
+const convertToSatoshis = (values) => {
+  if (Array.isArray(values)) {
+    for (let i = 0; i < values.length; i++) {
+      values[i].value = convertToSatoshis(values[i].value)
+    }
+  } else {
+    return Math.round(1e8 * values)
+  }
+  return values
+}
 
 // takes an epoch time and returns the commonly used ISO date string format
 const convertEpochToIso = (epochTime) => {
@@ -11,7 +20,6 @@ const convertEpochToIso = (epochTime) => {
     let date = new Date(epochTime * 1000)
     return date.toISOString()
   } else {
-    console.log(`Tried to convert non-number value ${typeof(epochTime)} into ISO string!`)
     return epochTime
   }
 }
@@ -21,22 +29,21 @@ class Transaction {
     this.txid = '',
     this.total = 0,
     this.fee = 0,
-    this.timeConfirmed = '',
-    this.timeReceived = '',
+    this.timeConfirmed = undefined,
+    this.timeReceived = undefined,
     this.inputs = [],
     this.outputs = []
   }
 
   convertValuesToSatoshis() {
     this.total = convertToSatoshis(this.total)
-    this.outputs = this.outputs.map( (elem) => {
-      return elem.value = convertToSatoshis(elem.value)
-    })
+    this.fee = convertToSatoshis(this.fee)
+    this.outputs = convertToSatoshis(this.outputs)
   }
 
   convertTimesToISO() {
-    this.timeConfirmed = convertEpochToIso()
-    this.timeReceived = convertEpochToIso()
+    this.timeConfirmed = convertEpochToIso(this.timeConfirmed)
+    this.timeReceived = convertEpochToIso(this.timeReceived)
   }
 }
 

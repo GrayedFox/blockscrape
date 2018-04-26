@@ -7,7 +7,6 @@ const getTransactionOutputs = async (txHash) => {
   let outputs = undefined
 
   if (await cache(['exists', txHash])) {
-    console.log('cached!')
     outputs = await cache(['get', txHash])
   } else {
     const rawTx = await api.getRawTransaction(txHash)

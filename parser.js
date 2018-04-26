@@ -11,7 +11,7 @@ const timeReceivedTokens = ['received', 'time']
 const txidTokens = ['txid', 'hash']
 const valueTokens = ['value', 'output_value']
 
-const populateInputs = (tx, inputs) => {
+const populateInputs = (transaction, inputs) => {
   for (let i = 0; i < inputs.length; i++) {
     let index = undefined
     let txid = undefined
@@ -38,11 +38,11 @@ const populateInputs = (tx, inputs) => {
       }
     }
 
-    tx.inputs.push(new InputTransaction(txid, index, value))
+    transaction.inputs.push(new InputTransaction(txid, index, value))
   }
 }
 
-const populateOutputs = (tx, outputs) => {
+const populateOutputs = (transaction, outputs) => {
   for (let i = 0; i < outputs.length; i++) {
     let index = undefined
     let value = undefined
@@ -63,7 +63,7 @@ const populateOutputs = (tx, outputs) => {
       }
     }
 
-    tx.outputs.push(new OutputTransaction(index, value))
+    transaction.outputs.push(new OutputTransaction(index, value))
   }
 }
 
@@ -117,14 +117,16 @@ const txParser = (rawTx) => {
   return transaction
 }
 
-const txTransformer = (formattedTx, convertToISO = true, convertToSatoshis = false) => {
+const txTransformer = (transaction, convertToISO = true, convertToSatoshis = false) => {
   if (convertToISO) {
-    formattedTx.convertTimesToISO()
+    transaction.convertTimesToISO()
   }
 
   if (convertToSatoshis) {
-    formattedTx.convertValuesToSatoshis()
+    transaction.convertValuesToSatoshis()
   }
+
+  return transaction
 }
 
 module.exports = {
