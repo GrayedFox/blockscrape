@@ -27,8 +27,8 @@ const convertEpochToIso = (epochTime) => {
 class Transaction {
   constructor() {
     this.txid = '',
-    this.total = 0,
-    this.fee = 0,
+    this.total = undefined,
+    this.fee = undefined,
     this.timeConfirmed = undefined,
     this.timeReceived = undefined,
     this.inputs = [],

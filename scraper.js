@@ -13,8 +13,10 @@ const scraper = async (blockHeight) => {
     let rawTx = await api.getRawTransaction(transactions[i])
     let tx = parser.txParser(rawTx)
 
-    tx.total = helpers.getTransactionTotal(tx.outputs)
-    tx.fee = await helpers.calculateFee(tx, tx.total)
+    tx.total = tx.total || helpers.getTransactionTotal(tx.outputs)
+    tx.fee = tx.fee || await helpers.calculateFee(tx, tx.total)
+
+    // tx = parser.txTransformer(tx, true, true)
 
     blockTransactionData.push([blockHeight, tx.total, tx.fee, tx.timeReceived, tx.txid])
   }

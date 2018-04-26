@@ -9,7 +9,7 @@ const outputIndexTokens = ['n']
 const timeConfirmedTokens = ['confirmed']
 const timeReceivedTokens = ['received', 'time']
 const txidTokens = ['txid', 'hash']
-const valueTokens = ['value', 'output_value']
+const valueTokens = ['value', 'output_value', 'total']
 
 const populateInputs = (transaction, inputs) => {
   for (let i = 0; i < inputs.length; i++) {
@@ -108,7 +108,7 @@ const txParser = (rawTx) => {
       }
 
       if (valueTokens.includes(key)) {
-        transaction.value = rawTx[key]
+        transaction.total = rawTx[key]
         continue
       }
     }
