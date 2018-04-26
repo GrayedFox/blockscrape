@@ -9,7 +9,7 @@ if (blockchainCli.endsWith('litecoin-cli') || blockchainCli.endsWith('bitcoin-cl
 }
 
 // if both api and cli are defined api is given preference
-if (blockchainApi === 'blockcyper') {
+if (blockchainApi === 'blockcypher') {
   blockchain = blockcypher
 }
 
