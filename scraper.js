@@ -1,5 +1,5 @@
 const api = require('./api/api.js')
-const globals = require('./globals.js')
+const helpers = require('./helpers.js')
 
 const scraper = async (blockHeight) => {
   let blockHash = await api.getBlockHashByHeight(blockHeight)
@@ -12,8 +12,8 @@ const scraper = async (blockHeight) => {
     let tx = await api.getRawTransaction(transactions[i])
     tx = JSON.parse(tx)
 
-    let txAmount = globals.getTransactionTotal(tx.vout)
-    let fee = await globals.calculateFee(tx, txAmount)
+    let txAmount = helpers.getTransactionTotal(tx.vout)
+    let fee = await helpers.calculateFee(tx, txAmount)
     let txTime = new Date(tx.time * 1000)
 
     blockTransactionData.push([blockHeight, txAmount, fee, txTime, tx.txid])
