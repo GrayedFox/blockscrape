@@ -99,9 +99,9 @@ const remote = (request) => {
 
 const client = (args) => {
   if (blockchainApi) {
-    remote(`${args.join('')}`) //ToDo: will need to add logic here to process url params (?begin,var=value,&add)
+    return remote(`${args.join('')}`) //ToDo: will need to add logic here to process url params (?begin,var=value,&add)
   } else {
-    local(`${blockchainCli} ${args.join(' ')}`)
+    return local(`${blockchainCli} ${args.join(' ')}`)
   }
 }
 
