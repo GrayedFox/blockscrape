@@ -1,3 +1,5 @@
+const { Transaction, InputTransaction, OutputTransaction } = require('./classes.js')
+
 const fee = ['fee', 'fees']
 const inputs = [ 'inputs', 'vin']
 const inputsIndex = ['output_index', 'vout']
@@ -5,36 +7,9 @@ const inputsTxid = ['txid', 'prev_hash']
 const outputs = ['outputs', 'vout']
 const outputsIndex = ['n']
 const timeConfirmed = ['confirmed']
-const timeReceived = ['received'] //ToDo figure out how ltc getRawTransaction time attribtes relate
+const timeReceived = ['received', 'time']
 const txid = ['txid', 'hash']
 const value = ['value', 'output_value']
-
-class Transaction {
-  constructor() {
-    this.txid = '',
-    this.value = 0,
-    this.fee = 0,
-    this.timeConfirmed = '',
-    this.timeReceived = '',
-    this.inputs = [],
-    this.outputs = []
-  }
-}
-
-class InputTransaction {
-  constructor(txid, inputIndex, value) {
-    this.txid = txid,
-    this.inputIndex = inputIndex,
-    this.value = value
-  }
-}
-
-class OutputTransaction {
-  constructor(outputIndex, value) {
-    this.outputIndex = outputIndex,
-    this.value = value
-  }
-}
 
 const populateInputs = (tx, inputs) => {
   for (let i = 0; i < inputs.length; i++) {
@@ -92,6 +67,7 @@ const populateOutputs = (tx, outputs) => {
   }
 }
 
+// scannerless parser which processes transaction information based on matching strings (does not transform data)
 const txParser = (rawTx) => {
   if (typeof(rawTx) === 'string') {
     rawTx = JSON.parse(rawTx)
@@ -141,6 +117,17 @@ const txParser = (rawTx) => {
   return transaction
 }
 
+const txTransformer = (formattedTx, convertToISO = true, convertToSatoshis = false) => {
+  if (convertToISO) {
+    formattedTx.convertTimesToISO()
+  }
+
+  if (convertToSatoshis) {
+    formattedTx.convertValuesToSatoshis()
+  }
+}
+
 module.exports = {
-  txParser
+  txParser,
+  txTransformer
 }
