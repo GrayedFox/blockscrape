@@ -9,7 +9,7 @@ const getTransactionOutputs = async (txHash) => {
   if (await cache(['exists', txHash])) {
     outputs = await cache(['get', txHash])
   } else {
-    const rawTx = await api.getRawTransaction(txHash)
+    const rawTx = await api.getRawTransaction(txHash, [true])
     let tx = parser.txParser(rawTx)
     outputs = tx.outputs
     cache(['set', txHash, tx.outputs])

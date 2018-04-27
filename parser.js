@@ -184,6 +184,12 @@ const blockParser = (rawBlock) => {
       }
     }
   }
+
+  if (!block.totalTransactions) {
+    block.totalTransactions = block.transactions.length
+  }
+
+  return block
 }
 
 module.exports = {
