@@ -1,15 +1,23 @@
-const { Transaction, TransactionInput, TransactionOutput } = require('./classes.js')
+const { Block, Transaction, TransactionInput, TransactionOutput } = require('./classes.js')
 
-const feeTokens = ['fee', 'fees']
-const inputTokens = [ 'inputs', 'vin']
-const inputIndexTokens = ['output_index', 'vout']
-const inputTxidTokens = ['txid', 'prev_hash']
-const outputTokens = ['outputs', 'vout']
-const outputIndexTokens = ['n']
-const timeConfirmedTokens = ['confirmed']
-const timeReceivedTokens = ['received', 'time']
-const txidTokens = ['txid', 'hash']
-const valueTokens = ['value', 'output_value', 'total']
+const blockHashTokens = ['hash']
+const blockHeightTokens = ['height']
+const blockTimeMedianTokens = ['mediantime']
+const blockTimeReceivedTokens = ['received_time']
+const blockTimeTokens = ['time']
+const blockTransactionTokens = ['tx', 'txids']
+const blockTransactionTotalTokens = ['n_tx']
+
+const transactionFeeTokens = ['fee', 'fees']
+const transactionInputIndexTokens = ['output_index', 'vout']
+const transactionInputTokens = [ 'inputs', 'vin']
+const transactionInputTxidTokens = ['txid', 'prev_hash']
+const transactionOutputIndexTokens = ['n']
+const transactionOutputTokens = ['outputs', 'vout']
+const transactionTimeConfirmedTokens = ['confirmed']
+const transactionTimeReceivedTokens = ['received', 'time']
+const transactionTxidTokens = ['txid', 'hash']
+const transactionValueTokens = ['value', 'output_value', 'total']
 
 const populateInputs = (transaction, inputs) => {
   for (let i = 0; i < inputs.length; i++) {
@@ -18,17 +26,17 @@ const populateInputs = (transaction, inputs) => {
     let value = undefined
 
     for (const key of Object.keys(inputs[i])) {
-      if (inputIndexTokens.includes(key)) {
+      if (transactionInputIndexTokens.includes(key)) {
         index = inputs[i][key]
         continue
       }
 
-      if (inputTxidTokens.includes(key)) {
+      if (transactionInputTxidTokens.includes(key)) {
         txid = inputs[i][key]
         continue
       }
 
-      if (valueTokens.includes(key)) {
+      if (transactionValueTokens.includes(key)) {
         value = inputs[i][key]
         continue
       }
@@ -48,12 +56,12 @@ const populateOutputs = (transaction, outputs) => {
     let value = undefined
 
     for (const key of Object.keys(outputs[i])) {
-      if (outputIndexTokens.includes(key)) {
+      if (transactionOutputIndexTokens.includes(key)) {
         index = outputs[i][key]
         continue
       }
 
-      if (valueTokens.includes(key)) {
+      if (transactionValueTokens.includes(key)) {
         value = outputs[i][key]
         continue
       }
@@ -67,7 +75,7 @@ const populateOutputs = (transaction, outputs) => {
   }
 }
 
-// scannerless parser which processes transaction information based on matching strings (does not transform data)
+// scannerless transaction parser which checks tx attributes against matching string tokens (does not transform data)
 const txParser = (rawTx) => {
   if (typeof(rawTx) === 'string') {
     rawTx = JSON.parse(rawTx)
@@ -77,37 +85,37 @@ const txParser = (rawTx) => {
 
   for (const key of Object.keys(rawTx)) {
     if (Array.isArray(rawTx[key])) {
-      if (inputTokens.includes(key)) {
+      if (transactionInputTokens.includes(key)) {
         populateInputs(transaction, rawTx[key])
         continue
       }
 
-      if (outputTokens.includes(key)) {
+      if (transactionOutputTokens.includes(key)) {
         populateOutputs(transaction, rawTx[key])
         continue
       }
     } else {
-      if (txidTokens.includes(key)) {
+      if (transactionTxidTokens.includes(key)) {
         transaction.txid = rawTx[key]
         continue
       }
 
-      if (feeTokens.includes(key)) {
+      if (transactionFeeTokens.includes(key)) {
         transaction.fee = rawTx[key]
         continue
       }
 
-      if (timeConfirmedTokens.includes(key)) {
+      if (transactionTimeConfirmedTokens.includes(key)) {
         transaction.timeConfirmed = rawTx[key]
         continue
       }
 
-      if (timeReceivedTokens.includes(key)) {
+      if (transactionTimeReceivedTokens.includes(key)) {
         transaction.timeReceived = rawTx[key]
         continue
       }
 
-      if (valueTokens.includes(key)) {
+      if (transactionValueTokens.includes(key)) {
         transaction.total = rawTx[key]
         continue
       }
@@ -117,19 +125,69 @@ const txParser = (rawTx) => {
   return transaction
 }
 
-const txTransformer = (transaction, convertToISO = true, convertToSatoshis = false) => {
+// transform data of a given Transaction or Block to standard formats
+const transformData = (object, convertToISO = true, convertToSatoshis = true) => {
   if (convertToISO) {
-    transaction.convertTimesToISO()
+    object.convertTimesToISO()
   }
 
-  if (convertToSatoshis) {
-    transaction.convertValuesToSatoshis()
+  if (object instanceof Transaction && convertToSatoshis) {
+    object.convertValuesToSatoshis()
   }
 
-  return transaction
+  return object
+}
+
+// scannerless block parser which checks block attributes against matching string tokens (does not transform data)
+const blockParser = (rawBlock) => {
+  if (typeof(rawBlock) === 'string') {
+    rawBlock = JSON.parse(rawBlock)
+  }
+
+  let block = new Block()
+
+  for (const key of Object.keys(rawBlock)) {
+    if (Array.isArray(rawBlock[key])) {
+      if (blockTransactionTokens.includes(key)) {
+        block.transactions = rawBlock[key]
+        continue
+      }
+    } else {
+      if (blockHashTokens.includes(key)) {
+        block.hash = rawBlock[key]
+        continue
+      }
+
+      if (blockHeightTokens.includes(key)) {
+        block.height = rawBlock[key]
+        continue
+      }
+
+      if (blockTimeTokens.includes(key)) {
+        block.time = rawBlock[key]
+        continue
+      }
+
+      if (blockTimeMedianTokens.includes(key)) {
+        block.timeMedian = rawBlock[key]
+        continue
+      }
+
+      if (blockTimeReceivedTokens.includes(key)) {
+        block.timeReceived = rawBlock[key]
+        continue
+      }
+
+      if (blockTransactionTotalTokens.includes(key)) {
+        block.totalTransactions = rawBlock[key]
+        continue
+      }
+    }
+  }
 }
 
 module.exports = {
+  blockParser,
   txParser,
-  txTransformer
+  transformData
 }
