@@ -10,7 +10,7 @@ const scraper = async (blockHeight) => {
 
   // skip the generation transaction (coinbase) when scraping
   for (let i = 1; i < block.transactions.length; i++) {
-    let rawTx = await api.getRawTransaction(block.transactions[i], [true])
+    let rawTx = await api.getRawTransaction(block.transactions[i])
     let tx = parser.txParser(rawTx)
 
     tx.total = tx.total || helpers.getTransactionTotal(tx.outputs)

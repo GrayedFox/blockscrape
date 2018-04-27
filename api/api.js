@@ -42,6 +42,10 @@ const getInfo = (options) => {
 }
 
 const getRawTransaction = (txHash, options) => {
+  if (api === litecoin && typeof(options) === 'undefined') {
+    options = [true]
+  }
+
   return client([api.getRawTransaction, txHash], options)
 }
 
