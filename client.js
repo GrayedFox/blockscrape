@@ -97,15 +97,29 @@ const remote = (request) => {
   })
 }
 
+/**
+ *  This is the central component for spawning http requests or child processes which in turn query data from the user
+ *  defined blockchain (i.e. litecoin-cli or api.blockcypher.com).
+ *
+ *  [Spawns a promisified data stream using child process or https request based on "command" with optional "params"]
+ *  @param  {[array]} command :: the command/endpoint/url with required argument(s) -- required
+ *  @param  {[array]} params  :: optional parameters for the given command -- optional
+ *  @return {[promise]}       :: returns a promise; resolved when data stream ends, rejected on error
+ **/
 const client = (command, params) => {
+  if (typeof(params) !== 'undefined' && Array.isArray(params) === false) {
+    console.error(`Optional params must be an array! Instead got ${typeof(params)}`)
+    process.exit(1)
+  }
+
   if (blockchainApi) {
-    return remote(`${command, params.join('')}`) //ToDo: will need to add logic here to process url params (?begin,var=value,&add)
-  } else {
-    if (typeof(params) !== 'undefined' && Array.isArray(params) === false) {
-      console.error(`Optional params must be an array! Instead got ${typeof(params)}`)
-      process.exit(1)
+    let queryString = ''
+    if (Array.isArray(params)) {
+      queryString = `${command.join('/')}?${params.join('&')}`
     }
 
+    return remote(`${command.join('/')}${queryString}`)
+  } else {
     if (Array.isArray(params)) {
       command.push(...params)
     }

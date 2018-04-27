@@ -19,11 +19,11 @@ if (blockchainApi === 'blockcypher') {
  *  blockcypher or litecoin files for examples of mapping commands to this format and make sure to extend the
  *  IF conditions above for catching and setting the correct API.
  *
- *  [shared format for all API commands]
- *  @param  {[type]} required :: normally a string (valid tx/block hash) or number; this argument is always required
- *  @param  {[array]} options :: optional params for the command, must be an array even if passing a single value
+ *  [shared format for all API commands: required arg, optional args]
+ *  @param  {[type]} required :: normally a string (valid tx/block hash) or number -- required
+ *  @param  {[array]} options :: params for the command, must be an array even if passing a single value -- optional
  *  @return {[promise]}       :: returns a promise; resolved with result of command, rejected by any error
- */
+ **/
 
 const decodeRawTransaction = (txHash, options) => {
   return client([api.decodeRawTransaction, txHash], options)

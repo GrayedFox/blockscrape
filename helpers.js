@@ -18,7 +18,7 @@ const getTransactionOutputs = async (txHash) => {
   return outputs
 }
 
-// loop through the outputs of a tx, greedily returning the value of an output tx where n matches vOutIdx
+// loop through the outputs of a transaction, greedily returning the value of the output whos index matches inputIndex
 const getMatchingTransactionValue = async (txHash, inputIndex) => {
   let outputs = await getTransactionOutputs(txHash)
 
