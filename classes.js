@@ -47,7 +47,7 @@ class Transaction {
   }
 }
 
-class InputTransaction {
+class TransactionInput {
   constructor(txid, inputIndex, value) {
     this.txid = txid,
     this.index = inputIndex,
@@ -55,7 +55,7 @@ class InputTransaction {
   }
 }
 
-class OutputTransaction {
+class TransactionOutput {
   constructor(outputIndex, value) {
     this.index = outputIndex,
     this.value = value
@@ -64,6 +64,6 @@ class OutputTransaction {
 
 module.exports = {
   Transaction,
-  InputTransaction,
-  OutputTransaction
+  TransactionInput,
+  TransactionOutput
 }

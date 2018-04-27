@@ -1,4 +1,4 @@
-const { Transaction, InputTransaction, OutputTransaction } = require('./classes.js')
+const { Transaction, TransactionInput, TransactionOutput } = require('./classes.js')
 
 const feeTokens = ['fee', 'fees']
 const inputTokens = [ 'inputs', 'vin']
@@ -38,7 +38,7 @@ const populateInputs = (transaction, inputs) => {
       }
     }
 
-    transaction.inputs.push(new InputTransaction(txid, index, value))
+    transaction.inputs.push(new TransactionInput(txid, index, value))
   }
 }
 
@@ -63,7 +63,7 @@ const populateOutputs = (transaction, outputs) => {
       }
     }
 
-    transaction.outputs.push(new OutputTransaction(index, value))
+    transaction.outputs.push(new TransactionOutput(index, value))
   }
 }
 
