@@ -3,7 +3,6 @@ const { spawn } = require('child_process')
 const { LRUMap } = require('lru_map')
 
 const blockchainApi = process.env.BLOCKSCRAPEAPI
-const blockchain = process.env.BLOCKSCRAPEAPICHAIN || 'ltc'
 const blockchainCli = process.env.BLOCKSCRAPECLI || 'litecoin-cli'
 const cacheSize = process.env.BLOCKSCRAPECACHESIZE || 100000
 
@@ -98,12 +97,20 @@ const remote = (request) => {
   })
 }
 
-const client = (args) => {
+const client = (command, params) => {
   if (blockchainApi) {
-    const url = `${blockchainApi}${blockchain}`
-    return remote(`${url}/${args.join('')}`) //ToDo: will need to add logic here to process url params (?begin,var=value,&add)
+    return remote(`${command, params.join('')}`) //ToDo: will need to add logic here to process url params (?begin,var=value,&add)
   } else {
-    return local(`${blockchainCli} ${args.join(' ')}`)
+    if (typeof(params) !== 'undefined' && Array.isArray(params) === false) {
+      console.error(`Optional params must be an array! Instead got ${typeof(params)}`)
+      process.exit(1)
+    }
+
+    if (Array.isArray(params)) {
+      command.push(...params)
+    }
+
+    return local(`${blockchainCli} ${command.join(' ')}`)
   }
 }
 
