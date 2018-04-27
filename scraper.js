@@ -4,7 +4,7 @@ const parser = require('./parser.js')
 
 const scraper = async (blockHeight) => {
   let blockHash = await api.getBlockHashByHeight(blockHeight)
-  let block = await api.getBlock(blockHash)
+  let block = await api.getBlockByHash(blockHash)
   let transactions = JSON.parse(block).tx
   let blockTransactionData = []
 
