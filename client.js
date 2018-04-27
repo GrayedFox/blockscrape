@@ -77,6 +77,7 @@ const local = (command) => {
   })
 }
 
+// ToDo: will need to allow for POST (and perhaps other) types of requests too
 const remote = (request) => {
   return new Promise( (resolve, reject) => {
     https.get(request, (response) => {

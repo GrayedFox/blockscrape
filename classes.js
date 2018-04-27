@@ -1,8 +1,4 @@
-/**
-  * Classes and class specfic helper functions, namely @Transacion, @InputTransaction and @OutputTransaction
-**/
-
-// careful when converting - this assumes a standard Satoshi ratio (i.e. 1 BTC = 100,000,000 Satoshis)
+// recursive function to convert value(s) to Sathoshi; !NOTE! assumes standard ratio of 1:100,000,000
 const convertToSatoshis = (values) => {
   if (Array.isArray(values)) {
     for (let i = 0; i < values.length; i++) {
@@ -14,13 +10,31 @@ const convertToSatoshis = (values) => {
   return values
 }
 
-// takes an epoch time and returns the commonly used ISO date string format
+// converts a given epochTime to standard ISO date string - if epochTime is not a number do not attempt transform
 const convertEpochToIso = (epochTime) => {
-  if (typeof(epochTime) === 'number') {
+  if (typeof(epochTime) !== 'number') {
+    return epochTime
+  } else {
     let date = new Date(epochTime * 1000)
     return date.toISOString()
-  } else {
-    return epochTime
+  }
+}
+
+class Block {
+  constructor() {
+    this.hash = '',
+    this.height = '',
+    this.time = undefined,
+    this.timeMedian = undefined,
+    this.timeReceived = undefined,
+    this.transactions = []
+    this.totalTransactions = undefined
+  }
+
+  convertEpochToIso() {
+    this.time = convertEpochToIso(this.time)
+    this.timeMediam = convertEpochToIso(this.timeMedian)
+    this.timeReceived = convertEpochToIso(this.timeReceived)
   }
 }
 
@@ -63,6 +77,7 @@ class TransactionOutput {
 }
 
 module.exports = {
+  Block,
   Transaction,
   TransactionInput,
   TransactionOutput
