@@ -16,9 +16,9 @@ const scraper = async (blockHeight) => {
     tx.total = tx.total || helpers.getTransactionTotal(tx.outputs)
     tx.fee = tx.fee || await helpers.calculateFee(tx, tx.total)
 
-    // tx = parser.transformData(tx, true, true)
+    tx = parser.transformData(tx)
 
-    blockTransactionData.push([blockHeight, tx.total, tx.fee, tx.timeReceived, tx.txid])
+    blockTransactionData.push([blockHeight, tx.total, tx.fee, tx.timeReceived, tx.hash])
   }
 
   return({ msg: 'blockDone', data: blockTransactionData, block: blockHeight, txTotal: block.transactions.length - 1 })

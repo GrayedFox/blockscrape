@@ -22,7 +22,7 @@ const transactionValueTokens = ['value', 'output_value', 'total']
 const populateInputs = (transaction, inputs) => {
   for (let i = 0; i < inputs.length; i++) {
     let index = undefined
-    let txid = undefined
+    let hash = undefined
     let value = undefined
 
     for (const key of Object.keys(inputs[i])) {
@@ -32,7 +32,7 @@ const populateInputs = (transaction, inputs) => {
       }
 
       if (transactionInputTxidTokens.includes(key)) {
-        txid = inputs[i][key]
+        hash = inputs[i][key]
         continue
       }
 
@@ -41,12 +41,12 @@ const populateInputs = (transaction, inputs) => {
         continue
       }
 
-      if (txid && index && value) {
+      if (hash && index && value) {
         break
       }
     }
 
-    transaction.inputs.push(new TransactionInput(txid, index, value))
+    transaction.inputs.push(new TransactionInput(hash, index, value))
   }
 }
 
@@ -96,7 +96,7 @@ const txParser = (rawTx) => {
       }
     } else {
       if (transactionTxidTokens.includes(key)) {
-        transaction.txid = rawTx[key]
+        transaction.hash = rawTx[key]
         continue
       }
 
@@ -123,19 +123,6 @@ const txParser = (rawTx) => {
   }
 
   return transaction
-}
-
-// transform data of a given Transaction or Block to standard formats
-const transformData = (object, convertToISO = true, convertToSatoshis = true) => {
-  if (convertToISO) {
-    object.convertTimesToISO()
-  }
-
-  if (object instanceof Transaction && convertToSatoshis) {
-    object.convertValuesToSatoshis()
-  }
-
-  return object
 }
 
 // scannerless block parser which checks block attributes against matching string tokens (does not transform data)
@@ -190,6 +177,19 @@ const blockParser = (rawBlock) => {
   }
 
   return block
+}
+
+// transform data of a given Transaction or Block to standard formats
+const transformData = (object, convertToISO = true, convertToSatoshis = true) => {
+  if (convertToISO) {
+    object.timesToISO()
+  }
+
+  if (object instanceof Transaction && convertToSatoshis) {
+    object.valuesToSatoshis()
+  }
+
+  return object
 }
 
 module.exports = {

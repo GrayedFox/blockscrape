@@ -20,50 +20,51 @@ const convertEpochToIso = (epochTime) => {
   }
 }
 
-class Block {
+class Data {
   constructor() {
     this.hash = '',
-    this.height = '',
     this.time = undefined,
-    this.timeMedian = undefined,
-    this.timeReceived = undefined,
-    this.transactions = []
-    this.totalTransactions = undefined
-  }
-
-  convertEpochToIso() {
-    this.time = convertEpochToIso(this.time)
-    this.timeMediam = convertEpochToIso(this.timeMedian)
-    this.timeReceived = convertEpochToIso(this.timeReceived)
-  }
-}
-
-class Transaction {
-  constructor() {
-    this.txid = '',
-    this.total = undefined,
-    this.fee = undefined,
     this.timeConfirmed = undefined,
     this.timeReceived = undefined,
-    this.inputs = [],
-    this.outputs = []
+    this.timeMedian = undefined
   }
 
-  convertValuesToSatoshis() {
-    this.total = convertToSatoshis(this.total)
-    this.fee = convertToSatoshis(this.fee)
-    this.outputs = convertToSatoshis(this.outputs)
-  }
-
-  convertTimesToISO() {
+  timesToISO() {
+    this.time = convertEpochToIso(this.time)
+    this.timeMedian = convertEpochToIso(this.timeMedian)
     this.timeConfirmed = convertEpochToIso(this.timeConfirmed)
     this.timeReceived = convertEpochToIso(this.timeReceived)
   }
 }
 
+class Block extends Data {
+  constructor() {
+    super()
+    this.height = '',
+    this.transactions = []
+    this.totalTransactions = undefined
+  }
+}
+
+class Transaction extends Data {
+  constructor() {
+    super()
+    this.total = undefined,
+    this.fee = undefined,
+    this.inputs = [],
+    this.outputs = []
+  }
+
+  valuesToSatoshis() {
+    this.total = convertToSatoshis(this.total)
+    this.fee = convertToSatoshis(this.fee)
+    this.outputs = convertToSatoshis(this.outputs)
+  }
+}
+
 class TransactionInput {
-  constructor(txid, inputIndex, value) {
-    this.txid = txid,
+  constructor(hash, inputIndex, value) {
+    this.hash = hash,
     this.index = inputIndex,
     this.value = value
   }

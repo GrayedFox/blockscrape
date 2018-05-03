@@ -37,7 +37,7 @@ const calculateFee = async (tx, outputTotal) => {
   let inputTotal = 0
 
   for (let i = 0; i < tx.inputs.length; i++) {
-    inputTotal += await getMatchingTransactionValue(tx.inputs[i].txid, tx.inputs[i].index)
+    inputTotal += await getMatchingTransactionValue(tx.inputs[i].hash, tx.inputs[i].index)
   }
 
   return inputTotal - outputTotal
