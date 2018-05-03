@@ -9,7 +9,7 @@ if (blockchainCli.endsWith('litecoin-cli') || blockchainCli.endsWith('bitcoin-cl
 }
 
 // if both api and cli are defined api is given preference
-if (blockchainApi === 'blockcypher') {
+if (blockchainApi.includes('blockcypher')) {
   api = blockcypher
 }
 
@@ -25,12 +25,20 @@ if (blockchainApi === 'blockcypher') {
  *  @return {[promise]}       :: returns a promise; resolved with result of command, rejected by any error
  **/
 
-const decodeRawTransaction = (txHash, options) => {
-  return client([api.decodeRawTransaction, txHash], options)
+const decodeRawTransaction = (txHash, options, method) => {
+  if (api === blockcypher && typeof(method) === 'undefined') {
+    method = 'POST'
+  }
+
+  return client([api.decodeRawTransaction, txHash], options, method)
 }
 
 const getBlockByHash = (blockhash, options) => {
   return client([api.getBlockByHash, blockhash], options)
+}
+
+const getBlockByHeight = (height, options) => {
+  return client([api.getBlockByHeight, height], options)
 }
 
 const getBlockHashByHeight = (height, options) => {
@@ -52,6 +60,7 @@ const getRawTransaction = (txHash, options) => {
 module.exports = {
   decodeRawTransaction,
   getBlockByHash,
+  getBlockByHeight,
   getBlockHashByHeight,
   getInfo,
   getRawTransaction

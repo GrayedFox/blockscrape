@@ -77,10 +77,21 @@ const local = (command) => {
   })
 }
 
-// ToDo: will need to allow for POST (and perhaps other) types of requests too
-const remote = (request) => {
+const remote = (request, method) => {
+
+  const requestHostName = blockchainApi.match(/[^/]*/)[0]
+  const requestPath = `${blockchainApi.match(/\/(.*)/)[0]}${request}`
+  const requestType = method || 'GET'
+
+  const options = {
+    hostname: requestHostName,
+    port: 443,
+    path: requestPath,
+    method: requestType
+  }
+
   return new Promise( (resolve, reject) => {
-    https.get(request, (response) => {
+    https.request(options, (response) => {
       let data = ''
 
       response.setEncoding('utf8')
@@ -99,15 +110,15 @@ const remote = (request) => {
 }
 
 /**
- *  This is the central component for spawning http requests or child processes which in turn query data from the user
+ *  This is the central component for spawning https requests or child processes which in turn query data from the user
  *  defined blockchain (i.e. litecoin-cli or api.blockcypher.com).
  *
- *  [Spawns a promisified data stream using child process or https request based on "command" with optional "params"]
+ *  [Spawns a promisified data stream using spawn() or https.request() based on "command" with optional "params"]
  *  @param  {[array]} command :: the command/endpoint/url with required argument(s) -- required
  *  @param  {[array]} params  :: optional parameters for the given command -- optional
  *  @return {[promise]}       :: returns a promise; resolved when data stream ends, rejected on error
  **/
-const client = (command, params) => {
+const client = (command, params, method) => {
   if (typeof(params) !== 'undefined' && Array.isArray(params) === false) {
     console.error(`Optional params must be an array! Instead got ${typeof(params)}`)
     process.exit(1)
@@ -116,10 +127,10 @@ const client = (command, params) => {
   if (blockchainApi) {
     let queryString = ''
     if (Array.isArray(params)) {
-      queryString = `${command.join('/')}?${params.join('&')}`
+      queryString = `?${params.join('&')}`
     }
 
-    return remote(`${command.join('/')}${queryString}`)
+    return remote(`${command.join('/')}${queryString}`, method)
   } else {
     if (Array.isArray(params)) {
       command.push(...params)
