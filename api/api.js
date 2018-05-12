@@ -2,17 +2,17 @@ const { client, blockchainCli, blockchainApi, blockchainApiToken } = require('..
 const litecoin = require('./litecoin.js')
 const blockcypher = require('./blockcypher.js')
 
-let api = undefined
+let blockchain = undefined
 let args = { method: 'GET', port: 443, strictSSL: true }
 let defaultParams = []
 
 if (blockchainCli.endsWith('litecoin-cli') || blockchainCli.endsWith('bitcoin-cli')) {
-  api = litecoin
+  blockchain = litecoin
 }
 
 // if both api (remote) and cli (local) are defined remote endpoint is given preference
 if (blockchainApi && blockchainApi.includes('blockcypher')) {
-  api = blockcypher
+  blockchain = blockcypher
   // NOTE blockcypher refuses to return data, waiting on response from their team,
   // see: https://github.com/blockcypher/node-client/issues/25
   if (blockchainApiToken) {
@@ -43,40 +43,40 @@ function setDefaults(params) {
 }
 
 const decodeRawTransaction = (txHash, params) => {
-  if (api === blockcypher) {
+  if (blockchain === blockcypher) {
     args.method = 'POST' // NOTE figure out design pattern to move all conditionals outside of these core api functions
   }
 
   params = setDefaults(params)
-  return client([api.decodeRawTransaction, txHash], params, args)
+  return client([blockchain.decodeRawTransaction, txHash], params, args)
 }
 
 const getBlockByHash = (blockhash, params) => {
   params = setDefaults(params)
-  return client([api.getBlockByHash, blockhash], params, args)
+  return client([blockchain.getBlockByHash, blockhash], params, args)
 }
 
 const getBlockByHeight = (height, params) => {
   params = setDefaults(params)
-  return client([api.getBlockByHeight, height], params, args)
+  return client([blockchain.getBlockByHeight, height], params, args)
 }
 
 const getBlockHashByHeight = (height, params) => {
   params = setDefaults(params)
-  return client([api.getBlockHash, height], params, args)
+  return client([blockchain.getBlockHash, height], params, args)
 }
 
 const getInfo = (params) => {
   params = setDefaults(params)
-  return client([api.getInfo], params, args)
+  return client([blockchain.getInfo], params, args)
 }
 
 const getRawTransaction = (txHash, params) => {
-  if (api === litecoin && typeof(params) === 'undefined') {
+  if (blockchain === litecoin && typeof(params) === 'undefined') {
     params = [true] // see above note
   }
   params = setDefaults(params)
-  return client([api.getRawTransaction, txHash], params, args)
+  return client([blockchain.getRawTransaction, txHash], params, args)
 }
 
 module.exports = {

@@ -12,7 +12,7 @@ const getTransactionOutputs = async (txHash) => {
     const rawTx = await api.getRawTransaction(txHash)
     let tx = parser.txParser(rawTx)
     outputs = tx.outputs
-    cache(['set', txHash, tx.outputs])
+    cache(['set', txHash, outputs])
   }
 
   return outputs
