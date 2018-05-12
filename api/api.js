@@ -13,6 +13,8 @@ if (blockchainCli.endsWith('litecoin-cli') || blockchainCli.endsWith('bitcoin-cl
 // if both api (remote) and cli (local) are defined remote endpoint is given preference
 if (blockchainApi && blockchainApi.includes('blockcypher')) {
   api = blockcypher
+  // NOTE blockcypher refuses to return data, waiting on response from their team,
+  // see: https://github.com/blockcypher/node-client/issues/25
   if (blockchainApiToken) {
     defaultParams.push(`token=${blockchainApiToken}`)
   }
