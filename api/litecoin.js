@@ -51,7 +51,7 @@ module.exports = {
   getPeerInfo: 'getpeerinfo',
   getRawChangeAddress: 'getrawchangeaddress',
   getRawMempool: 'getrawmempool',
-  getRawTransaction: 'getrawtransaction',
+  getTransactionByHash: 'getrawtransaction',
   getReceivedByAccount: 'getreceivedbyaccount',
   getReceivedByAddress: 'getreceivedbyaddress',
   getTransaction: 'gettransaction',

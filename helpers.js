@@ -1,26 +1,30 @@
 const api = require('./api/api.js')
 const { cache } = require('./client.js')
-const parser = require('./parser.js')
+const { parseTransaction } = require('./parser.js')
 
-// attempt to get a cached copy of a transaction's output array, otherwise use getRawTransaction to fetch it
-const getTransactionOutputs = async (txHash) => {
-  let outputs = undefined
+// attempt to get a cached copy of a transaction, if this fails, parse and store the result of hitting the api
+const getCachedTransaction = async (txHash) => {
+  let transaction = undefined
 
   if (await cache(['exists', txHash])) {
-    outputs = await cache(['get', txHash])
+    transaction = await cache(['get', txHash])
   } else {
-    const rawTx = await api.getRawTransaction(txHash)
-    let tx = parser.txParser(rawTx)
-    outputs = tx.outputs
-    cache(['set', txHash, tx.outputs])
+    transaction = await api.getTransactionByHash(txHash)
+    transaction = parseTransaction(transaction)
+    cache(['set', txHash, transaction])
   }
 
-  return outputs
+  return transaction
 }
+
+// the calling context of getCachedTransction defines its cache so we must wrap it into an exposed method which has
+// the 'helper' file as it's calling scope to prevent spwaning multiple caches which are not shared
+const getTransaction = async (txHash) => getCachedTransaction(txHash)
 
 // loop through the outputs of a transaction, greedily returning the value of the output whos index matches inputIndex
 const getMatchingTransactionValue = async (txHash, inputIndex) => {
-  let outputs = await getTransactionOutputs(txHash)
+  const transaction = await getCachedTransaction(txHash)
+  let outputs = transaction.outputs
 
   for (let i = 0; i < outputs.length; i++) {
     if (outputs[i].index === inputIndex) {
@@ -45,5 +49,6 @@ const calculateFee = async (tx, outputTotal) => {
 
 module.exports = {
   calculateFee,
+  getTransaction,
   getTransactionTotal
 }

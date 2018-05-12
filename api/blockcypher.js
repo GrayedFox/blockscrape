@@ -4,5 +4,5 @@ module.exports = {
   getBlockByHash: '/blocks',
   getBlockByHeight: '/blocks',
   getInfo: '/',
-  getRawTransaction: '/txs'
+  getTransactionByHash: '/txs'
 }
