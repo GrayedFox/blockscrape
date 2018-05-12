@@ -76,7 +76,7 @@ const populateOutputs = (transaction, outputs) => {
 }
 
 // scannerless transaction parser which checks tx attributes against matching string tokens (does not transform data)
-const txParser = (rawTx) => {
+const parseTransaction = (rawTx) => {
   if (typeof(rawTx) === 'string') {
     rawTx = JSON.parse(rawTx)
   }
@@ -126,7 +126,7 @@ const txParser = (rawTx) => {
 }
 
 // scannerless block parser which checks block attributes against matching string tokens (does not transform data)
-const blockParser = (rawBlock) => {
+const parseBlock = (rawBlock) => {
   if (typeof(rawBlock) === 'string') {
     rawBlock = JSON.parse(rawBlock)
   }
@@ -193,7 +193,7 @@ const transformData = (object, convertToISO = true, convertToSatoshis = true) =>
 }
 
 module.exports = {
-  blockParser,
-  txParser,
+  parseBlock,
+  parseTransaction,
   transformData
 }
