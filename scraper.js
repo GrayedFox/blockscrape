@@ -1,6 +1,6 @@
 const api = require('./api/api.js')
 const helpers = require('./helpers.js')
-const { parseTransaction, parseBlock, transformData } = require('./parser.js')
+const { parseBlock, transformData } = require('./parser.js')
 
 const scraper = async (blockHeight) => {
   let blockHash = await api.getBlockHashByHeight(blockHeight)
@@ -10,8 +10,7 @@ const scraper = async (blockHeight) => {
 
   // skip the generation transaction (coinbase) when scraping
   for (let i = 1; i < block.transactions.length; i++) {
-    let rawTx = await api.getTransactionByHash(block.transactions[i])
-    let tx = parseTransaction(rawTx)
+    let tx = await helpers.getTransaction(block.transactions[i])
 
     tx.total = tx.total || helpers.getTransactionTotal(tx.outputs)
     tx.fee = tx.fee || await helpers.calculateFee(tx, tx.total)
