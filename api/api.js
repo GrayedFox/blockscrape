@@ -3,7 +3,7 @@ const litecoin = require('./litecoin.js')
 const blockcypher = require('./blockcypher.js')
 
 let api = undefined
-let args = { method: 'GET', port: 443 }
+let args = { method: 'GET', port: 443, strictSSL: true }
 let defaultParams = []
 
 if (blockchainCli.endsWith('litecoin-cli') || blockchainCli.endsWith('bitcoin-cli')) {
@@ -30,48 +30,50 @@ if (blockchainApi && blockchainApi.includes('blockcypher')) {
  *  @return {[promise]}       :: returns a promise; resolved with result of command, rejected by any error
  **/
 
-const setDefaults = (params) => {
+function setDefaults(params) {
   if (typeof(params) !== 'undefined') {
     return [...params, ...defaultParams]
-  } else if (defaultParams.length > 0) {
+  }
+
+  if (defaultParams.length > 0) {
     return [...defaultParams]
   }
 }
 
 const decodeRawTransaction = (txHash, params) => {
   if (api === blockcypher) {
-    args.method = 'POST'
+    args.method = 'POST' // NOTE figure out design pattern to move all conditionals outside of these core api functions
   }
 
-  setDefaults(params)
+  params = setDefaults(params)
   return client([api.decodeRawTransaction, txHash], params, args)
 }
 
 const getBlockByHash = (blockhash, params) => {
-  setDefaults(params)
+  params = setDefaults(params)
   return client([api.getBlockByHash, blockhash], params, args)
 }
 
 const getBlockByHeight = (height, params) => {
-  setDefaults(params)
+  params = setDefaults(params)
   return client([api.getBlockByHeight, height], params, args)
 }
 
 const getBlockHashByHeight = (height, params) => {
-  setDefaults(params)
+  params = setDefaults(params)
   return client([api.getBlockHash, height], params, args)
 }
 
 const getInfo = (params) => {
-  setDefaults(params)
+  params = setDefaults(params)
   return client([api.getInfo], params, args)
 }
 
 const getRawTransaction = (txHash, params) => {
   if (api === litecoin && typeof(params) === 'undefined') {
-    params = [true] // NOTE figure out a way to get rid of all conditionals inside of these api calls, if possible?
+    params = [true] // see above note
   }
-  setDefaults(params)
+  params = setDefaults(params)
   return client([api.getRawTransaction, txHash], params, args)
 }
 

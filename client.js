@@ -79,17 +79,15 @@ const local = (command) => {
 }
 
 const remote = (request, args) => {
-
   const requestHostName = blockchainApi.match(/[^/]*/)[0]
   const requestPath = `${blockchainApi.match(/\/(.*)/)[0]}${request}`
-  const requestType = args.method
-  const requestPort = args.port
 
   const options = {
     hostname: requestHostName,
-    port: requestPort,
     path: requestPath,
-    method: requestType
+    port: args.port,
+    method: args.method,
+    strictSSL: args.strictSSL
   }
 
   return new Promise( (resolve, reject) => {
