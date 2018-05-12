@@ -71,12 +71,12 @@ const getInfo = (params) => {
   return client([blockchain.getInfo], params, args)
 }
 
-const getRawTransaction = (txHash, params) => {
+const getTransactionByHash = (txHash, params) => {
   if (blockchain === litecoin && typeof(params) === 'undefined') {
     params = [true] // see above note
   }
   params = setDefaults(params)
-  return client([blockchain.getRawTransaction, txHash], params, args)
+  return client([blockchain.getTransactionByHash, txHash], params, args)
 }
 
 module.exports = {
@@ -85,5 +85,5 @@ module.exports = {
   getBlockByHeight,
   getBlockHashByHeight,
   getInfo,
-  getRawTransaction
+  getTransactionByHash
 }
