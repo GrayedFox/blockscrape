@@ -1,25 +1,27 @@
 const api = require('./api/api.js')
-const globals = require('./globals.js')
+const helpers = require('./helpers.js')
+const parser = require('./parser.js')
 
 const scraper = async (blockHeight) => {
   let blockHash = await api.getBlockHashByHeight(blockHeight)
-  let block = await api.getBlock(blockHash)
-  let transactions = JSON.parse(block).tx
+  let rawBlock = await api.getBlockByHash(blockHash)
+  let block = parser.blockParser(rawBlock)
   let blockTransactionData = []
 
   // skip the generation transaction (coinbase) when scraping
-  for (let i = 1; i < transactions.length; i++) {
-    let tx = await api.getRawTransaction(transactions[i])
-    tx = JSON.parse(tx)
+  for (let i = 1; i < block.transactions.length; i++) {
+    let rawTx = await api.getRawTransaction(block.transactions[i])
+    let tx = parser.txParser(rawTx)
 
-    let txAmount = globals.getTransactionTotal(tx.vout)
-    let fee = await globals.calculateFee(tx, txAmount)
-    let txTime = new Date(tx.time * 1000)
+    tx.total = tx.total || helpers.getTransactionTotal(tx.outputs)
+    tx.fee = tx.fee || await helpers.calculateFee(tx, tx.total)
 
-    blockTransactionData.push([blockHeight, txAmount, fee, txTime, tx.txid])
+    tx = parser.transformData(tx)
+
+    blockTransactionData.push([blockHeight, tx.total, tx.fee, tx.timeReceived, tx.hash])
   }
 
-  return({ msg: 'blockDone', data: blockTransactionData, block: blockHeight, txTotal: transactions.length - 1 })
+  return({ msg: 'blockDone', data: blockTransactionData, block: blockHeight, txTotal: block.transactions.length - 1 })
 }
 
 module.exports = {

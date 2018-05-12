@@ -28,7 +28,7 @@ module.exports = {
   getAddressByAccount: 'getaddressesbyaccount',
   getBalance: 'getbalance',
   getBestBlockhash: 'getbestblockhash',
-  getBlock: 'getblock',
+  getBlockByHash: 'getblock',
   getBlockchainInfo: 'getblockchaininfo',
   getBlockCount: 'getblockcount',
   getBlockHash: 'getblockhash',
