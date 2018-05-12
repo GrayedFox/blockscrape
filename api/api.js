@@ -1,16 +1,21 @@
-const { client, blockchainCli, blockchainApi } = require('../client.js')
+const { client, blockchainCli, blockchainApi, blockchainApiToken } = require('../client.js')
 const litecoin = require('./litecoin.js')
 const blockcypher = require('./blockcypher.js')
 
 let api = undefined
+let args = { method: 'GET', port: 443 }
+let defaultParams = []
 
 if (blockchainCli.endsWith('litecoin-cli') || blockchainCli.endsWith('bitcoin-cli')) {
   api = litecoin
 }
 
-// if both api and cli are defined api is given preference
+// if both api (remote) and cli (local) are defined remote endpoint is given preference
 if (blockchainApi && blockchainApi.includes('blockcypher')) {
   api = blockcypher
+  if (blockchainApiToken) {
+    defaultParams.push(`token=${blockchainApiToken}`)
+  }
 }
 
 /**
@@ -25,36 +30,49 @@ if (blockchainApi && blockchainApi.includes('blockcypher')) {
  *  @return {[promise]}       :: returns a promise; resolved with result of command, rejected by any error
  **/
 
-const decodeRawTransaction = (txHash, options, method) => {
-  if (api === blockcypher && typeof(method) === 'undefined') {
-    method = 'POST'
+const setDefaults = (params) => {
+  if (typeof(params) !== 'undefined') {
+    return [...params, ...defaultParams]
+  } else if (defaultParams.length > 0) {
+    return [...defaultParams]
+  }
+}
+
+const decodeRawTransaction = (txHash, params) => {
+  if (api === blockcypher) {
+    args.method = 'POST'
   }
 
-  return client([api.decodeRawTransaction, txHash], options, method)
+  setDefaults(params)
+  return client([api.decodeRawTransaction, txHash], params, args)
 }
 
-const getBlockByHash = (blockhash, options) => {
-  return client([api.getBlockByHash, blockhash], options)
+const getBlockByHash = (blockhash, params) => {
+  setDefaults(params)
+  return client([api.getBlockByHash, blockhash], params, args)
 }
 
-const getBlockByHeight = (height, options) => {
-  return client([api.getBlockByHeight, height], options)
+const getBlockByHeight = (height, params) => {
+  setDefaults(params)
+  return client([api.getBlockByHeight, height], params, args)
 }
 
-const getBlockHashByHeight = (height, options) => {
-  return client([api.getBlockHash, height], options)
+const getBlockHashByHeight = (height, params) => {
+  setDefaults(params)
+  return client([api.getBlockHash, height], params, args)
 }
 
-const getInfo = (options) => {
-  return client([api.getInfo], options)
+const getInfo = (params) => {
+  setDefaults(params)
+  return client([api.getInfo], params, args)
 }
 
-const getRawTransaction = (txHash, options) => {
-  if (api === litecoin && typeof(options) === 'undefined') {
-    options = [true]
+const getRawTransaction = (txHash, params) => {
+  if (api === litecoin && typeof(params) === 'undefined') {
+    params = [true] // NOTE figure out a way to get rid of all conditionals inside of these api calls, if possible?
   }
-
-  return client([api.getRawTransaction, txHash], options)
+  setDefaults(params)
+  return client([api.getRawTransaction, txHash], params, args)
 }
 
 module.exports = {

@@ -3,6 +3,6 @@ module.exports = {
   decodeRawTransaction:'/txs/decode',
   getBlockByHash: '/blocks',
   getBlockByHeight: '/blocks',
-  getInfo: '',
+  getInfo: '/',
   getRawTransaction: '/txs'
 }
