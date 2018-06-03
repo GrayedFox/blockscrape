@@ -1,6 +1,6 @@
 {
   "name": "blockscrape",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Scrape blockchains for desired attributes and export to a CSV file",
   "main": "main.js",
   "bin": {
