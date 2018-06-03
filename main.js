@@ -14,7 +14,7 @@ const csvSaveLocation = `${path.resolve(__dirname)}/dumps/`
 
 let blockBegin = process.env.BLOCKSCRAPEFROM
 let blockEnd = process.env.BLOCKSCRAPETO || 0
-let blockLimit = process.env.BLOCKSCRAPELIMIT || 0
+let blockLimit = process.env.BLOCKSCRAPELIMIT || 10000
 
 let blocksToWrite = []
 let orphanedBlocks = []
@@ -36,7 +36,7 @@ const readFailedBlocksFromFile = () => fs.readFileSync(failedBlocksFile, { encod
 
 const writeFailedBlockToFile = (block) => fs.writeFileSync(failedBlocksFile, block, { flags: 'a' })
 
-const clearFailedBlocksFile = () => fs.truncateSync(failedBlocksFile)
+const deleteFailedBlocksFile = () => fs.unlinkSync(failedBlocksFile)
 
 const saveExportedData = (name) => fs.renameSync(csvFile, `${csvSaveLocation}${name}`)
 
@@ -81,21 +81,19 @@ const writeToCsvFile = (txData) => {
 const checkForFailedBlocks = () => {
   if (blockFailCheck === true) {
     blockFailCheck = false
-    console.log('Checking failed blocks!')
-    failedBlocks = readFailedBlocksFromFile().split('\n')
-    for (let i = 0; i < failedBlocks.length; i++) {
-      // reading a file with empty lines results in populating an array with elements containing a blank string only,
-      // which we want to ignore by checking the length of each element, which we must do before converting the string
-      // to a number since unary + conversion will change empty strings to 0 (which has a length gt 1)
-      if (failedBlocks[i].length > 0) {
+    console.log('Checking for failed blocks!')
+    if (fs.existsSync(failedBlocksFile)) {
+      failedBlocks = readFailedBlocksFromFile().split('\n')
+      for (let i = 0; i < failedBlocks.length; i++) {
         let failedBlockHeight = +failedBlocks[i]
+        // don't add duplicate blocks to orphanedBlock array
         if (orphanedBlocks.indexOf(failedBlockHeight) === -1) {
           orphanedBlocks.push(failedBlockHeight)
         }
       }
+      failedBlocks = []
+      deleteFailedBlocksFile()
     }
-    failedBlocks = []
-    clearFailedBlocksFile()
   }
 }
 
@@ -134,7 +132,7 @@ const blockHandler = (worker) => {
       worker.send({ cmd: 'nextBlock', nextBlock: blockHeight })
     } else {
       console.log('Block limit reach or no more blocks to scrape! Shutting worker down...')
-      worker.kill('SIGTERM')
+      worker.kill('SIGQUIT')
     }
   }
 }
@@ -177,32 +175,43 @@ const storeTransactionData = (txData, txBlockHeight) => {
 }
 
 const main = () => {
-  if (cluster.isMaster) {
-    if (blockBegin === undefined) {
-      blockBegin = (readLastWrittenBlockFromFile() - 1)
+  const forkWorkers = (amount) => {
+    for (let i = 0; i < amount; i++) {
+      cluster.fork()
+      totalWorkers += 1
+    }
+  }
+
+  const setUp = (reboot = false) => {
+    if (blockBegin === undefined || reboot === true) {
+      if (fs.existsSync(lastWrittenBlockFile)) {
+        blockBegin = (readLastWrittenBlockFromFile() - 1)
+      } else {
+        console.error('BLOCKSCRAPEFROM undefined and cannot read last written block from disk! Read the docs!')
+        process.exit(1)
+      }
     }
 
     if (blockBegin < blockEnd) {
       blockBegin = blockEnd + (blockEnd = blockBegin, 0)
     }
 
-    if (blockLimit === 0) {
-      blockLimit = blockBegin - blockEnd
-    }
-
+    totalBlocksScraped = 0
+    firstBlock = true
     blockHeight = blockBegin
 
-    console.log(`Master process ${process.pid} is running`)
-    console.log(`Starting block set to: ${blockBegin}`)
+    openCsvWriteStream()
+    forkWorkers(cores.length)
+
+    console.log(`First block set to: ${blockBegin}`)
     console.log(`Final block set to: ${blockEnd}`)
     console.log(`Block limit set to ${blockLimit}`)
+  }
 
-    openCsvWriteStream()
+  if (cluster.isMaster) {
+    console.log(`Master process ${process.pid} is running`)
 
-    for (let i = 0; i < cores.length; i++) {
-      cluster.fork()
-      totalWorkers += 1
-    }
+    setUp()
 
     cluster.on('message', (worker, message) => {
       if (message.data) {
@@ -236,7 +245,7 @@ const main = () => {
 
     cluster.on('exit', (worker, code, signal) => {
       totalWorkers -= 1
-      if (signal !== 'SIGTERM') {
+      if (signal !== 'SIGQUIT') {
         console.error(`Worker ${worker.process.pid} died with code ${code} and signal ${signal}`)
         writeFailedBlockToFile(`${blocksBeingScraped[worker.process.pid]}\n`)
         blockFailCheck = true
@@ -250,9 +259,18 @@ const main = () => {
           console.log('Job done, saving data to dumps folder and closing write stream...')
           csvWriteStream.end()
           saveExportedData(`blocks-${blockBegin}-${readLastWrittenBlockFromFile()}.csv`)
+          if (blockHeight > blockEnd) {
+            setUp(true)
+          }
         }
       }
     })
+
+    process.on('SIGINT', () => {
+      console.warn('Caught interrupt! Telling scraper to finish job after next block...')
+      blockEnd = blockHeight + 1
+    })
+
   } else {
     console.log(`Worker ${process.pid} started...`)
 

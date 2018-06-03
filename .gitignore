@@ -64,6 +64,9 @@ typings/
 *.csv
 *.heapsnapshot
 
+# ignore all save files used for persistence
+*.save
+
 # ignore restart blockscrape script
 restartBlockscrape.sh
 
