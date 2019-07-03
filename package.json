@@ -7,11 +7,10 @@
     "blockscrape": "./main.js"
   },
   "dependencies": {
-    "eslint": "^4.19.1",
     "lru_map": "^0.3.3"
   },
   "devDependencies": {
-    "heapdump": "^0.3.14"
+    "eslint": "6.0.1"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
