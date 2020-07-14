@@ -10,7 +10,7 @@
     "lru_map": "^0.3.3"
   },
   "devDependencies": {
-    "eslint": "6.0.1"
+    "eslint": "^7.4.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
