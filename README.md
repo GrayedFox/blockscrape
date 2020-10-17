@@ -1,5 +1,7 @@
 # Blockscrape
 
+## Discontinued -- please contact me at che.fisher@gmail.com if you are interested in maintaining this project
+
 Blockscrape is a utility program that scrapes a blockchain for required information and exports it
 to a CSV file.
 
