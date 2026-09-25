@@ -1,3 +1,6 @@
+> [!WARNING]
+> This repository has been archived.
+
 # Blockscrape
 
 ## Discontinued -- please contact me at che.fisher@gmail.com if you are interested in maintaining this project
